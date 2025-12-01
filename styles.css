@@ -36,6 +36,18 @@ h1 {
     font-size: 0.9em;
 }
 
+.subtitle a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.subtitle a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
 .status {
     padding: 15px;
     border-radius: 10px;
@@ -50,8 +62,8 @@ h1 {
 }
 
 .status.connected {
-    background: #efe;
-    color: #3c3;
+    background: #e8f5e9;
+    color: #2e7d32;
 }
 
 .status.error {
@@ -75,16 +87,55 @@ h1 {
     flex: 1;
 }
 
-.connect-btn.connected {
-    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-    color: white;
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 10px;
+    background: rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
-.check-indicator {
-    display: inline-block;
-    margin-right: 8px;
-    font-weight: bold;
-    font-family: monospace;
+.status-indicator.connected {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 1);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.status-indicator.vibrating {
+    background: #ffeb3b;
+    border-color: #ffc107;
+    box-shadow: 0 0 12px rgba(255, 235, 59, 0.8);
+    animation: pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+.connect-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.button-label {
+    flex: 1;
+}
+
+.connect-btn.connected .button-label {
+    opacity: 0.7;
+    font-weight: 400;
 }
 
 button {
@@ -116,6 +167,14 @@ button:disabled {
 .connect-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
+}
+
+.connect-btn.connected {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+}
+
+.connect-btn.connected:hover:not(:disabled) {
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
 }
 
 .vibrate-btn {
@@ -188,6 +247,49 @@ button:disabled {
     cursor: not-allowed;
 }
 
+.control-group select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.95em;
+    color: #333;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+    outline: none;
+}
+
+.control-group select:hover {
+    border-color: #667eea;
+}
+
+.control-group select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.control-group input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.95em;
+    color: #333;
+    transition: border-color 0.3s ease;
+    outline: none;
+}
+
+.control-group input[type="number"]:hover {
+    border-color: #667eea;
+}
+
+.control-group input[type="number"]:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 .control-group input[type="checkbox"] {
     margin-right: 8px;
     width: 18px;
@@ -204,17 +306,93 @@ button:disabled {
     font-weight: 600;
 }
 
+.preset-select-group label {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.preset-hint {
+    font-size: 0.75em;
+    font-weight: 400;
+    color: #777;
+}
+
+.preset-citation {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #eef2ff;
+    border-radius: 6px;
+    font-size: 0.8em;
+    color: #334;
+    line-height: 1.4;
+    text-align: left;
+}
+
+.preset-citation a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.preset-citation a:hover {
+    text-decoration: underline;
+}
+
+.control-group select.preset-active {
+    border-color: #4caf50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+}
+
 .info {
     margin-top: 30px;
-    padding: 15px;
+    padding: 20px;
     background: #f5f5f5;
     border-radius: 10px;
-    font-size: 0.85em;
+    font-size: 0.9em;
     color: #666;
-    line-height: 1.6;
+    line-height: 1.7;
+    text-align: left;
 }
 
 .info strong {
     color: #333;
+    display: block;
+    margin-bottom: 12px;
+    font-size: 1.05em;
+}
+
+.pairing-list {
+    margin: 12px 0 0 0;
+    padding-left: 24px;
+    list-style-type: disc;
+}
+
+.pairing-list li {
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+.pairing-list li:last-child {
+    margin-bottom: 0;
+}
+
+.pairing-list strong {
+    display: inline;
+    color: #333;
+    margin-bottom: 0;
+    font-size: inherit;
+}
+
+.pairing-list a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.pairing-list a:hover {
+    color: #764ba2;
+    text-decoration: underline;
 }
 

@@ -29,7 +29,19 @@ export function encodeRumble(lowFreq, highFreq, amplitude) {
         }
     }
     
-    let q = Math.round(p) * 0.5;
+    // Round p first, but check for edge cases where q would be an exact integer
+    // This can cause weaker vibrations at specific amplitude values
+    p = Math.round(p);
+    let q = p * 0.5;
+    
+    // If q is an exact integer (even or odd), adjust p slightly to avoid edge cases
+    // This prevents weak vibrations at specific amplitude values like 0.45 (q=63)
+    if (Number.isInteger(q) && p > 0) {
+        // Adjust p by 1 to create a fractional q, ensuring stronger vibration
+        p = p + 1;
+        q = p * 0.5;
+    }
+    
     const remainder = q % 2;
     if (remainder > 0) q--;
     q = (q >> 1) + 64;
@@ -59,6 +71,7 @@ export class JoyCon {
     #isVibrating = false;
     #currentAbortController = null;
     #onStateChange = null;
+    #vibratingSide = null;
 
     constructor(onStateChange) {
         this.#onStateChange = onStateChange;
@@ -284,14 +297,14 @@ export class JoyCon {
         }
 
         const {
-            lowFreq = 600,
-            highFreq = 600,
-            amplitude = 0.5,
-            duration = DEFAULT_DURATION,
-            repeatMode = 'unlimited',
-            repeatCount = 1,
-            pauseDuration = 0,
-        } = options;
+            lowFreq,
+            highFreq,
+            amplitude,
+            duration,
+            repeatMode,
+            repeatCount,
+            pauseDuration,
+        } = this.#normalizeConfig(options);
 
         // Cancel previous rumble if running
         if (this.#currentAbortController) {
@@ -384,7 +397,11 @@ export class JoyCon {
         while (!signal.aborted && cyclesCompleted < maxCycles) {
             // Left buzz
             if (this.#devices.left) {
+                this.#setVibratingSide('left');
                 await buzzDevice(this.#devices.left, duration);
+                if (!signal.aborted) {
+                    this.#setVibratingSide(null);
+                }
             }
             
             if (signal.aborted) break;
@@ -396,7 +413,11 @@ export class JoyCon {
 
             // Right buzz
             if (this.#devices.right) {
+                this.#setVibratingSide('right');
                 await buzzDevice(this.#devices.right, duration);
+                if (!signal.aborted) {
+                    this.#setVibratingSide(null);
+                }
             }
             
             if (signal.aborted) break;
@@ -414,6 +435,7 @@ export class JoyCon {
             }
         }
 
+        this.#setVibratingSide(null);
         sendStopBoth();
     }
 
@@ -433,6 +455,39 @@ export class JoyCon {
             this.#currentAbortController.abort();
             this.#currentAbortController = null;
         }
+        this.#vibratingSide = null;
+    }
+
+    #normalizeConfig(options = {}) {
+        const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+        const toNumber = (value, fallback) => {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : fallback;
+        };
+
+        const duration = clamp(toNumber(options.duration, DEFAULT_DURATION), 10, 2000);
+        const pauseDuration = Math.max(0, toNumber(options.pauseDuration, 0));
+        const amplitude = clamp(toNumber(options.amplitude, 0.5), 0, 1);
+        const repeatCount = Math.max(1, Math.floor(toNumber(options.repeatCount, 1)));
+        const repeatMode = options.repeatMode === 'count' ? 'count' : 'unlimited';
+
+        return {
+            lowFreq: toNumber(options.lowFreq, 600),
+            highFreq: toNumber(options.highFreq, 600),
+            amplitude,
+            duration,
+            repeatMode,
+            repeatCount,
+            pauseDuration,
+        };
+    }
+
+    #setVibratingSide(side) {
+        if (this.#vibratingSide === side) {
+            return;
+        }
+        this.#vibratingSide = side;
+        this.#notifyStateChange();
     }
 
     #notifyStateChange() {
@@ -441,7 +496,8 @@ export class JoyCon {
                 connected: this.#isConnected,
                 vibrating: this.#isVibrating,
                 deviceName: this.deviceName,
-                devices: this.devices
+                devices: this.devices,
+                vibratingSide: this.#vibratingSide
             });
         }
     }
