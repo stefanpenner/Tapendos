@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tapendos - Single-player</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        @view-transition {
+            navigation: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Tapendos</h1>
+        <p class="subtitle">Alternating Joy-Con vibration for <a href="https://en.wikipedia.org/wiki/Eye_movement_desensitization_and_reprocessing" target="_blank" rel="noopener noreferrer">EMDR</a></p>
+        
+        <div id="status" class="status disconnected">
+            Disconnected
+        </div>
+
+        <div class="controls">
+            <div class="control-group preset-select-group">
+                <label for="presetSelect">
+                    Presets
+                </label>
+                <select id="presetSelect"></select>
+                <div id="presetCitation" class="preset-citation" style="display: none;"></div>
+            </div>
+            <div class="control-group">
+                <label for="lengthSlider">
+                    Pulse Length: <span id="lengthValue">500</span>ms
+                </label>
+                <input type="range" id="lengthSlider" min="10" max="2000" value="500" step="10">
+            </div>
+
+            <div class="control-group">
+                <label for="intensitySlider">
+                    Intensity: <span id="intensityValue">0.5</span>
+                </label>
+                <input type="range" id="intensitySlider" min="0" max="1" value="0.5" step="0.05">
+            </div>
+
+            <div class="control-group">
+                <label for="pauseSlider">
+                    Pause: <span id="pauseValue">800</span>ms
+                </label>
+                <input type="range" id="pauseSlider" min="0" max="3000" value="800" step="50">
+            </div>
+
+            <div class="control-group repeat-mode-group">
+                <div class="repeat-mode-wrapper">
+                    <label for="repeatModeSelect">
+                        Repeat Mode:
+                    </label>
+                    <select id="repeatModeSelect">
+                        <option value="unlimited">Unlimited</option>
+                        <option value="count">Count</option>
+                    </select>
+                </div>
+                <div id="repeatCountGroup" class="repeat-count-wrapper" style="display: none;">
+                    <label for="repeatCountInput">
+                        Repeat Count: <span id="repeatCountValue">1</span>
+                    </label>
+                    <input type="number" id="repeatCountInput" min="1" value="1" step="1">
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <div class="connect-buttons-row">
+                <button id="connectLeftBtn" class="connect-btn">
+                    <span class="status-indicator"></span>
+                    <span class="button-label">Connect Left</span>
+                </button>
+                <button id="connectRightBtn" class="connect-btn">
+                    <span class="status-indicator"></span>
+                    <span class="button-label">Connect Right</span>
+                </button>
+            </div>
+            <button id="vibrateBtn" class="vibrate-btn" disabled>Vibrate</button>
+        </div>
+
+        <div class="info">
+            <strong>Note:</strong> Before connecting, make sure your Joy-Cons are paired with your computer via Bluetooth:
+            <ul class="pairing-list">
+                <li><strong>macOS:</strong> <a href="https://support.apple.com/guide/games/connect-a-game-controller-devf8cec167c/mac" target="_blank" rel="noopener noreferrer">Pairing instructions</a> — Hold the sync button on your Joy-Con until lights flash, then select it in System Settings > Bluetooth</li>
+                <li><strong>Windows:</strong> <a href="https://www.tomsguide.com/us/use-joy-cons-on-pc-mac,news-25419.html" target="_blank" rel="noopener noreferrer">Pairing instructions</a> — Hold the sync button, then add via Settings > Devices > Bluetooth</li>
+                <li><strong>iOS:</strong> Joy-Cons are not compatible with iOS devices. This app requires WebHID support (Chrome/Edge 89+ on desktop)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        import { JoyCon } from './joycon.mjs';
+        import { PRESETS, CUSTOM_PRESET_ID, LAST_PRESET_STORAGE_KEY } from './presets.mjs';
+
+        // UI Management
+        const connectLeftBtn = document.getElementById('connectLeftBtn');
+        const connectRightBtn = document.getElementById('connectRightBtn');
+        const vibrateBtn = document.getElementById('vibrateBtn');
+        const statusDiv = document.getElementById('status');
+
+        const lengthSlider = document.getElementById('lengthSlider');
+        const lengthValue = document.getElementById('lengthValue');
+        const intensitySlider = document.getElementById('intensitySlider');
+        const intensityValue = document.getElementById('intensityValue');
+        const pauseSlider = document.getElementById('pauseSlider');
+        const pauseValue = document.getElementById('pauseValue');
+        const repeatModeSelect = document.getElementById('repeatModeSelect');
+        const repeatCountGroup = document.getElementById('repeatCountGroup');
+        const repeatCountInput = document.getElementById('repeatCountInput');
+        const repeatCountValue = document.getElementById('repeatCountValue');
+        const presetSelect = document.getElementById('presetSelect');
+        const presetCitation = document.getElementById('presetCitation');
+
+        let joyCon = null;
+        let currentRumbleAbortController = null;
+        let currentRumblePromise = null;
+        let activePresetId = CUSTOM_PRESET_ID;
+        let isApplyingPreset = false;
+
+        intensityValue.textContent = formatAmplitudeDisplay(intensitySlider.value);
+
+        // Update value displays when sliders change and apply live config
+        lengthSlider.addEventListener('input', (e) => {
+            lengthValue.textContent = e.target.value;
+            if (!isApplyingPreset) {
+                handleManualPresetOverride();
+            }
+            applyLiveConfig();
+        });
+
+        intensitySlider.addEventListener('input', (e) => {
+            intensityValue.textContent = formatAmplitudeDisplay(e.target.value);
+            if (!isApplyingPreset) {
+                handleManualPresetOverride();
+            }
+            applyLiveConfig();
+        });
+
+        pauseSlider.addEventListener('input', (e) => {
+            pauseValue.textContent = e.target.value;
+            if (!isApplyingPreset) {
+                handleManualPresetOverride();
+            }
+            applyLiveConfig();
+        });
+
+        repeatModeSelect.addEventListener('change', (e) => {
+            const isCountMode = e.target.value === 'count';
+            repeatCountGroup.style.display = isCountMode ? 'block' : 'none';
+            applyLiveConfig();
+        });
+
+        repeatCountInput.addEventListener('input', (e) => {
+            let value = parseInt(e.target.value, 10);
+            if (isNaN(value) || value < 1) {
+                value = 1;
+            }
+            repeatCountValue.textContent = value;
+            e.target.value = value;
+            applyLiveConfig();
+        });
+
+        function getCurrentConfig() {
+            return {
+                duration: parseInt(lengthSlider.value, 10),
+                amplitude: parseFloat(intensitySlider.value),
+                pauseDuration: parseInt(pauseSlider.value, 10),
+                repeatMode: repeatModeSelect.value,
+                repeatCount: parseInt(repeatCountInput.value, 10) || 1,
+            };
+        }
+
+        async function applyLiveConfig() {
+            if (joyCon?.isVibrating && currentRumbleAbortController) {
+                // Cancel current rumble and start new one with updated config
+                currentRumbleAbortController.abort();
+                currentRumbleAbortController = null;
+                
+                // Wait a moment for cleanup, then start new rumble
+                await new Promise(resolve => setTimeout(resolve, 10));
+                
+                if (joyCon?.isConnected) {
+                    startRumble();
+                }
+            }
+        }
+
+        function updateButton(button, isConnected, label, isVibrating, isCurrentlyVibrating = false) {
+            const indicator = button.querySelector('.status-indicator');
+            const labelSpan = button.querySelector('.button-label');
+            
+            // Update indicator appearance
+            indicator.className = 'status-indicator';
+            if (isConnected) {
+                indicator.classList.add('connected');
+            }
+            if (isCurrentlyVibrating) {
+                indicator.classList.add('vibrating');
+            }
+            
+            // Update button text - make "Disconnect" more subtle
+            if (isConnected) {
+                labelSpan.textContent = label;
+                button.classList.add('connected');
+            } else {
+                labelSpan.textContent = `Connect ${label}`;
+                button.classList.remove('connected');
+            }
+            
+            button.disabled = isVibrating;
+        }
+
+        function updateUI(state, error = null) {
+            // Update status banner
+            if (error) {
+                statusDiv.textContent = error;
+                statusDiv.className = 'status error';
+            } else if (!state.connected) {
+                statusDiv.textContent = 'No Joy-Con connected';
+                statusDiv.className = 'status disconnected';
+            } else {
+                const devices = state.devices || { left: false, right: false };
+                const connectedCount = (devices.left ? 1 : 0) + (devices.right ? 1 : 0);
+                
+                if (connectedCount === 1) {
+                    statusDiv.textContent = '1/2 Joy-Con Connected • connect both to enable vibration';
+                } else if (connectedCount === 2) {
+                    statusDiv.textContent = 'Connected';
+                } else {
+                    statusDiv.textContent = 'Connected';
+                }
+                statusDiv.className = 'status connected';
+            }
+            
+            // Always update buttons (even on error)
+            const devices = state.devices || { left: false, right: false };
+            const vibratingSide = state.vibratingSide || null; // Track which side is currently vibrating
+            
+            updateButton(connectLeftBtn, devices.left, 'Left', state.vibrating, vibratingSide === 'left');
+            updateButton(connectRightBtn, devices.right, 'Right', state.vibrating, vibratingSide === 'right');
+            
+            // Update vibrate/stop button
+            if (state.vibrating) {
+                vibrateBtn.textContent = 'Stop';
+                vibrateBtn.className = 'stop-btn';
+            } else {
+                vibrateBtn.textContent = 'Vibrate';
+                vibrateBtn.className = 'vibrate-btn';
+            }
+            // Require both controllers to be connected to vibrate
+            const bothConnected = devices.left && devices.right;
+            vibrateBtn.disabled = !bothConnected;
+        }
+
+        function handleStateChange(state) {
+            // Update remaining count display if in count mode and vibrating
+            if (state.vibrating && state.remainingCount !== null && repeatModeSelect.value === 'count') {
+                repeatCountValue.textContent = state.remainingCount;
+            } else if (!state.vibrating && repeatModeSelect.value === 'count') {
+                // Reset to original value when not vibrating
+                repeatCountValue.textContent = repeatCountInput.value;
+            }
+            updateUI(state);
+        }
+
+        function getCurrentState() {
+            return joyCon ? {
+                connected: joyCon.isConnected,
+                vibrating: joyCon.isVibrating,
+                deviceName: joyCon.deviceName,
+                devices: joyCon.devices,
+                vibratingSide: null, // Will be updated via state change notifications
+                remainingCount: null // Will be updated via state change notifications
+            } : {
+                connected: false,
+                vibrating: false,
+                deviceName: 'Joy-Con',
+                devices: { left: false, right: false },
+                vibratingSide: null,
+                remainingCount: null
+            };
+        }
+
+        async function handleConnectLeft() {
+            if (!joyCon) {
+                joyCon = new JoyCon(handleStateChange);
+            }
+
+            try {
+                const state = joyCon.devices;
+                await (state.left ? joyCon.disconnectLeft() : joyCon.connectLeft());
+            } catch (error) {
+                updateUI(getCurrentState(), `Error: ${error.message}`);
+            }
+        }
+
+        async function handleConnectRight() {
+            if (!joyCon) {
+                joyCon = new JoyCon(handleStateChange);
+            }
+
+            try {
+                const state = joyCon.devices;
+                await (state.right ? joyCon.disconnectRight() : joyCon.connectRight());
+            } catch (error) {
+                updateUI(getCurrentState(), `Error: ${error.message}`);
+            }
+        }
+
+        async function startRumble() {
+            if (!joyCon?.isConnected) {
+                return;
+            }
+
+            // Require both controllers to be connected
+            const devices = joyCon.devices;
+            if (!devices.left || !devices.right) {
+                updateUI(getCurrentState(), 'Error: Both controllers must be connected to vibrate');
+                return;
+            }
+
+            if (typeof joyCon.rumble !== 'function') {
+                updateUI(getCurrentState(), 'Error: rumble method not available');
+                return;
+            }
+
+            const config = getCurrentConfig();
+            const abortController = new AbortController();
+            currentRumbleAbortController = abortController;
+
+            try {
+                currentRumblePromise = joyCon.rumble({
+                    lowFreq: 600,
+                    highFreq: 600,
+                    amplitude: config.amplitude,
+                    duration: config.duration,
+                    repeatMode: config.repeatMode,
+                    repeatCount: config.repeatCount,
+                    pauseDuration: config.pauseDuration,
+                }, abortController.signal);
+
+                await currentRumblePromise;
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    updateUI(getCurrentState(), `Vibration error: ${error.message}`);
+                }
+            } finally {
+                if (currentRumbleAbortController === abortController) {
+                    currentRumbleAbortController = null;
+                    currentRumblePromise = null;
+                }
+            }
+        }
+
+        async function handleVibrate() {
+            if (joyCon?.isVibrating) {
+                // Stop vibration
+                if (currentRumbleAbortController) {
+                    currentRumbleAbortController.abort();
+                    currentRumbleAbortController = null;
+                }
+                if (joyCon) {
+                    joyCon.stop();
+                }
+            } else {
+                // Start vibration
+                await startRumble();
+            }
+        }
+
+        presetSelect.addEventListener('change', (event) => {
+            const selectedId = event.target.value;
+            if (selectedId === CUSTOM_PRESET_ID) {
+                activePresetId = CUSTOM_PRESET_ID;
+                setPresetHighlight(false);
+                persistPresetSelection(CUSTOM_PRESET_ID);
+            } else {
+                applyPreset(selectedId);
+            }
+        });
+
+        connectLeftBtn.addEventListener('click', handleConnectLeft);
+        connectRightBtn.addEventListener('click', handleConnectRight);
+        vibrateBtn.addEventListener('click', handleVibrate);
+
+        initializePresets();
+
+        // Initialize UI
+        updateUI({ connected: false, vibrating: false, deviceName: 'Joy-Con', devices: { left: false, right: false }, vibratingSide: null });
+
+        if (!navigator.hid) {
+            statusDiv.textContent = 'WebHID not supported. Use Chrome/Edge 89+';
+            connectLeftBtn.disabled = true;
+            connectRightBtn.disabled = true;
+        } else {
+            navigator.hid.addEventListener('disconnect', (event) => {
+                if (joyCon) {
+                    joyCon.handleDisconnect(event.device);
+                }
+            });
+        }
+
+        function formatAmplitudeDisplay(value) {
+            const parsed = Number(value);
+            if (!Number.isFinite(parsed)) {
+                return value;
+            }
+            return (Math.round(parsed * 100) / 100).toString();
+        }
+
+
+        function persistPresetSelection(id) {
+            try {
+                localStorage.setItem(LAST_PRESET_STORAGE_KEY, id);
+            } catch (error) {
+                // Ignore storage limitations (e.g., private browsing)
+            }
+        }
+
+        function loadStoredPreset() {
+            try {
+                return localStorage.getItem(LAST_PRESET_STORAGE_KEY);
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function populatePresetOptions() {
+            const fragment = document.createDocumentFragment();
+            const customOption = document.createElement('option');
+            customOption.value = CUSTOM_PRESET_ID;
+            customOption.textContent = 'Custom';
+            fragment.appendChild(customOption);
+
+            PRESETS.forEach((preset) => {
+                const option = document.createElement('option');
+                option.value = preset.id;
+                option.textContent = `${preset.name} — ${preset.tagline}`;
+                fragment.appendChild(option);
+            });
+
+            presetSelect.innerHTML = '';
+            presetSelect.appendChild(fragment);
+        }
+
+        function setPresetHighlight(isPreset) {
+            presetSelect.classList.toggle('preset-active', isPreset);
+        }
+
+        function applyPreset(presetId, { persist = true } = {}) {
+            const preset = PRESETS.find((item) => item.id === presetId);
+            if (!preset) {
+                activePresetId = CUSTOM_PRESET_ID;
+                presetSelect.value = CUSTOM_PRESET_ID;
+                setPresetHighlight(false);
+                if (persist) {
+                    persistPresetSelection(CUSTOM_PRESET_ID);
+                }
+                return;
+            }
+
+            isApplyingPreset = true;
+            activePresetId = presetId;
+            presetSelect.value = presetId;
+
+            setPresetHighlight(true);
+
+            lengthSlider.value = preset.values.duration;
+            lengthValue.textContent = preset.values.duration;
+            intensitySlider.value = preset.values.amplitude;
+            intensityValue.textContent = formatAmplitudeDisplay(preset.values.amplitude);
+            pauseSlider.value = preset.values.pauseDuration;
+            pauseValue.textContent = preset.values.pauseDuration;
+            
+            // Apply repeat mode and count if specified
+            if (preset.values.repeatMode !== undefined) {
+                repeatModeSelect.value = preset.values.repeatMode;
+                const isCountMode = preset.values.repeatMode === 'count';
+                repeatCountGroup.style.display = isCountMode ? 'block' : 'none';
+            }
+            if (preset.values.repeatCount !== undefined) {
+                repeatCountInput.value = preset.values.repeatCount;
+                repeatCountValue.textContent = preset.values.repeatCount;
+            }
+            
+            // Hide citation display
+            presetCitation.style.display = 'none';
+            
+            // Trigger input events to ensure sliders update visually
+            lengthSlider.dispatchEvent(new Event('input'));
+            intensitySlider.dispatchEvent(new Event('input'));
+            pauseSlider.dispatchEvent(new Event('input'));
+            repeatModeSelect.dispatchEvent(new Event('change'));
+
+            isApplyingPreset = false;
+
+            if (persist) {
+                persistPresetSelection(presetId);
+            }
+
+            applyLiveConfig();
+        }
+
+        function handleManualPresetOverride() {
+            if (activePresetId === CUSTOM_PRESET_ID) {
+                return;
+            }
+
+            activePresetId = CUSTOM_PRESET_ID;
+            presetSelect.value = CUSTOM_PRESET_ID;
+            setPresetHighlight(false);
+            persistPresetSelection(CUSTOM_PRESET_ID);
+        }
+
+        function initializePresets() {
+            populatePresetOptions();
+            const storedPresetId = loadStoredPreset();
+            if (storedPresetId && PRESETS.some((preset) => preset.id === storedPresetId)) {
+                applyPreset(storedPresetId, { persist: false });
+            } else {
+                presetSelect.value = CUSTOM_PRESET_ID;
+                setPresetHighlight(false);
+            }
+        }
+    </script>
+</body>
+</html>
+

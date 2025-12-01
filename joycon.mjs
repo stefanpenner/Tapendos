@@ -72,6 +72,7 @@ export class JoyCon {
     #currentAbortController = null;
     #onStateChange = null;
     #vibratingSide = null;
+    #remainingCount = null;
 
     constructor(onStateChange) {
         this.#onStateChange = onStateChange;
@@ -339,6 +340,7 @@ export class JoyCon {
             }
         } finally {
             this.#isVibrating = false;
+            this.#remainingCount = null;
             if (this.#currentAbortController === abortController) {
                 this.#currentAbortController = null;
             }
@@ -393,6 +395,12 @@ export class JoyCon {
         let cyclesCompleted = 0;
         const isUnlimited = repeatMode === 'unlimited';
         const maxCycles = isUnlimited ? Infinity : repeatCount;
+        
+        // Initialize remaining count for countdown display
+        if (!isUnlimited) {
+            this.#remainingCount = repeatCount;
+            this.#notifyStateChange();
+        }
 
         while (!signal.aborted && cyclesCompleted < maxCycles) {
             // Left buzz
@@ -423,6 +431,12 @@ export class JoyCon {
             if (signal.aborted) break;
 
             cyclesCompleted++;
+            
+            // Update remaining count for countdown display
+            if (!isUnlimited) {
+                this.#remainingCount = Math.max(0, repeatCount - cyclesCompleted);
+                this.#notifyStateChange();
+            }
 
             // If not unlimited and we've reached the count, break
             if (!isUnlimited && cyclesCompleted >= maxCycles) {
@@ -436,6 +450,7 @@ export class JoyCon {
         }
 
         this.#setVibratingSide(null);
+        this.#remainingCount = null;
         sendStopBoth();
     }
 
@@ -497,7 +512,8 @@ export class JoyCon {
                 vibrating: this.#isVibrating,
                 deviceName: this.deviceName,
                 devices: this.devices,
-                vibratingSide: this.#vibratingSide
+                vibratingSide: this.#vibratingSide,
+                remainingCount: this.#remainingCount
             });
         }
     }
