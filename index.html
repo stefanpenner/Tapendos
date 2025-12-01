@@ -3,21 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Joy-Con Vibration Controller</title>
+    <title>Tapendos</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>🎮 Joy-Con Vibration</h1>
-        <p class="subtitle">Connect your Nintendo Joy-Con and trigger vibration</p>
+        <h1>🎮 Tapendos</h1>
+        <p class="subtitle">Tap to trigger vibration on your Nintendo Joy-Con</p>
         
         <div id="status" class="status disconnected">
             Disconnected
         </div>
 
+        <div class="controls">
+            <div class="control-group">
+                <label for="lengthSlider">
+                    Length: <span id="lengthValue">10</span>ms
+                </label>
+                <input type="range" id="lengthSlider" min="10" max="2000" value="10" step="10">
+            </div>
+
+            <div class="control-group">
+                <label for="intensitySlider">
+                    Intensity: <span id="intensityValue">0.5</span>
+                </label>
+                <input type="range" id="intensitySlider" min="0" max="1" value="0.5" step="0.1">
+            </div>
+
+            <div class="control-group">
+                <label for="pauseSlider">
+                    Pause: <span id="pauseValue">0</span>ms
+                </label>
+                <input type="range" id="pauseSlider" min="0" max="1000" value="0" step="50">
+            </div>
+
+            <div class="control-group">
+                <label for="repeatCheckbox">
+                    <input type="checkbox" id="repeatCheckbox">
+                    Repeat
+                </label>
+            </div>
+        </div>
+
         <div class="button-group">
             <button id="connectBtn" class="connect-btn">Connect Joy-Con</button>
             <button id="vibrateBtn" class="vibrate-btn" disabled>Vibrate</button>
+            <button id="stopBtn" class="stop-btn" style="display: none;">Stop</button>
         </div>
 
         <div class="info">
@@ -34,18 +65,81 @@
         // UI Management
         const connectBtn = document.getElementById('connectBtn');
         const vibrateBtn = document.getElementById('vibrateBtn');
+        const stopBtn = document.getElementById('stopBtn');
         const statusDiv = document.getElementById('status');
 
-        let joyCon = null;
+        const lengthSlider = document.getElementById('lengthSlider');
+        const lengthValue = document.getElementById('lengthValue');
+        const intensitySlider = document.getElementById('intensitySlider');
+        const intensityValue = document.getElementById('intensityValue');
+        const pauseSlider = document.getElementById('pauseSlider');
+        const pauseValue = document.getElementById('pauseValue');
+        const repeatCheckbox = document.getElementById('repeatCheckbox');
 
-        function updateUI(state) {
-            statusDiv.textContent = state.connected
-                ? `Connected: ${state.deviceName}${state.vibrating ? ' (Vibrating...)' : ''}`
-                : 'Disconnected';
-            statusDiv.className = `status ${state.connected ? 'connected' : 'disconnected'}`;
+        let joyCon = null;
+        let currentRumbleAbortController = null;
+        let currentRumblePromise = null;
+
+        // Update value displays when sliders change and apply live config
+        lengthSlider.addEventListener('input', (e) => {
+            lengthValue.textContent = e.target.value;
+            applyLiveConfig();
+        });
+
+        intensitySlider.addEventListener('input', (e) => {
+            intensityValue.textContent = e.target.value;
+            applyLiveConfig();
+        });
+
+        pauseSlider.addEventListener('input', (e) => {
+            pauseValue.textContent = e.target.value;
+            applyLiveConfig();
+        });
+
+        repeatCheckbox.addEventListener('change', () => {
+            applyLiveConfig();
+        });
+
+        function getCurrentConfig() {
+            return {
+                duration: parseInt(lengthSlider.value, 10),
+                amplitude: parseFloat(intensitySlider.value),
+                pauseDuration: parseInt(pauseSlider.value, 10),
+                repeat: repeatCheckbox.checked,
+            };
+        }
+
+        async function applyLiveConfig() {
+            if (joyCon?.isVibrating && currentRumbleAbortController) {
+                // Cancel current rumble and start new one with updated config
+                currentRumbleAbortController.abort();
+                currentRumbleAbortController = null;
+                
+                // Wait a moment for cleanup, then start new rumble
+                await new Promise(resolve => setTimeout(resolve, 10));
+                
+                if (joyCon?.isConnected) {
+                    startRumble();
+                }
+            }
+        }
+
+        function updateUI(state, error = null) {
+            if (error) {
+                statusDiv.textContent = error;
+                statusDiv.className = 'status error';
+            } else {
+                statusDiv.textContent = state.connected
+                    ? `Connected: ${state.deviceName}${state.vibrating ? ' (Vibrating...)' : ''}`
+                    : 'Disconnected';
+                statusDiv.className = `status ${state.connected ? 'connected' : 'disconnected'}`;
+            }
             connectBtn.textContent = state.connected ? 'Disconnect' : 'Connect Joy-Con';
             connectBtn.disabled = false;
             vibrateBtn.disabled = !state.connected || state.vibrating;
+
+            // Show/hide stop button
+            stopBtn.style.display = state.vibrating ? 'block' : 'none';
         }
 
         function handleStateChange(state) {
@@ -63,26 +157,65 @@
                     }
                     await joyCon.connect();
                 } catch (error) {
-                    updateUI({ connected: false, vibrating: false, deviceName: 'Joy-Con' });
-                    statusDiv.textContent = `Error: ${error.message}`;
+                    updateUI({ connected: false, vibrating: false, deviceName: 'Joy-Con' }, `Error: ${error.message}`);
+                }
+            }
+        }
+
+        async function startRumble() {
+            if (!joyCon?.isConnected) {
+                return;
+            }
+
+            if (typeof joyCon.rumble !== 'function') {
+                updateUI({ connected: true, vibrating: false, deviceName: joyCon.deviceName }, 'Error: rumble method not available');
+                return;
+            }
+
+            const config = getCurrentConfig();
+            const abortController = new AbortController();
+            currentRumbleAbortController = abortController;
+
+            try {
+                currentRumblePromise = joyCon.rumble({
+                    lowFreq: 600,
+                    highFreq: 600,
+                    amplitude: config.amplitude,
+                    duration: config.duration,
+                    repeat: config.repeat,
+                    pauseDuration: config.pauseDuration,
+                }, abortController.signal);
+
+                await currentRumblePromise;
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    updateUI({ connected: joyCon.isConnected, vibrating: false, deviceName: joyCon.deviceName }, `Vibration error: ${error.message}`);
+                }
+            } finally {
+                if (currentRumbleAbortController === abortController) {
+                    currentRumbleAbortController = null;
+                    currentRumblePromise = null;
                 }
             }
         }
 
         async function handleVibrate() {
-            if (!joyCon?.isConnected) {
-                return;
-            }
+            await startRumble();
+        }
 
-            try {
-                await joyCon.vibrate();
-            } catch (error) {
-                statusDiv.textContent = `Vibration error: ${error.message}`;
+        function handleStop() {
+            if (currentRumbleAbortController) {
+                currentRumbleAbortController.abort();
+                currentRumbleAbortController = null;
+            }
+            if (joyCon) {
+                joyCon.stop();
             }
         }
 
         connectBtn.addEventListener('click', handleConnect);
         vibrateBtn.addEventListener('click', handleVibrate);
+        stopBtn.addEventListener('click', handleStop);
 
         if (!navigator.hid) {
             updateUI({ connected: false, vibrating: false, deviceName: 'Joy-Con' });

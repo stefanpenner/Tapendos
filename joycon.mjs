@@ -51,14 +51,13 @@ const JOYCON_VID = 0x057e;
 const JOYCON_LEFT_PID = 0x2006;
 const JOYCON_RIGHT_PID = 0x2007;
 const RUMBLE_REPORT_ID = 16;
-const VIBRATION_DURATION = 300;
+const DEFAULT_DURATION = 300;
 
 export class JoyCon {
     #device = null;
     #isConnected = false;
-    #isInitialized = false;
     #isVibrating = false;
-    #vibrationTimeout = null;
+    #currentAbortController = null;
     #onStateChange = null;
 
     constructor(onStateChange) {
@@ -116,12 +115,10 @@ export class JoyCon {
             await this.#enableVibration();
 
             this.#isConnected = true;
-            this.#isInitialized = true;
             this.#notifyStateChange();
         } catch (error) {
             this.#device = null;
             this.#isConnected = false;
-            this.#isInitialized = false;
             this.#notifyStateChange();
             throw error;
         }
@@ -132,62 +129,136 @@ export class JoyCon {
             return;
         }
 
-        this.#stopVibration();
+        this.stop();
 
         try {
             if (this.#device) {
                 await this.#device.close();
             }
         } catch (error) {
-            // Ignore close errors
+            console.error('Error closing device:', error);
+            // Don't throw - allow disconnect to complete even if close fails
         }
 
         this.#device = null;
         this.#isConnected = false;
-        this.#isInitialized = false;
         this.#notifyStateChange();
     }
 
-    async vibrate(lowFreq = 600, highFreq = 600, amplitude = 0.5) {
+    async rumble(options = {}, abortSignal = null) {
         if (!this.#isConnected) {
             throw new Error('Not connected');
         }
 
-        if (this.#isVibrating) {
-            throw new Error('Already vibrating');
+        const {
+            lowFreq = 600,
+            highFreq = 600,
+            amplitude = 0.5,
+            duration = DEFAULT_DURATION,
+            repeat = false,
+            pauseDuration = 0,
+        } = options;
+
+        // Cancel previous rumble if running
+        if (this.#currentAbortController) {
+            this.#currentAbortController.abort();
         }
 
+        const abortController = new AbortController();
+        const signal = abortSignal || abortController.signal;
+        
+        if (abortSignal) {
+            abortSignal.addEventListener('abort', () => abortController.abort());
+        }
+        
+        this.#currentAbortController = abortController;
+
+        this.#isVibrating = true;
+        this.#notifyStateChange();
+
         try {
-            this.#isVibrating = true;
-            this.#notifyStateChange();
-
-            const rumblePacket = encodeRumble(lowFreq, highFreq, amplitude);
-            await this.#device.sendReport(RUMBLE_REPORT_ID, rumblePacket);
-
-            this.#vibrationTimeout = setTimeout(() => {
-                this.#stopVibration();
-            }, VIBRATION_DURATION);
+            await this.#runRumbleCycle({
+                lowFreq,
+                highFreq,
+                amplitude,
+                duration,
+                repeat,
+                pauseDuration,
+            }, signal);
         } catch (error) {
+            if (error.name !== 'AbortError') {
+                throw error;
+            }
+        } finally {
             this.#isVibrating = false;
+            if (this.#currentAbortController === abortController) {
+                this.#currentAbortController = null;
+            }
             this.#notifyStateChange();
-            throw error;
         }
     }
 
-    #stopVibration() {
-        if (this.#vibrationTimeout) {
-            clearTimeout(this.#vibrationTimeout);
-            this.#vibrationTimeout = null;
+    async #runRumbleCycle(config, signal) {
+        const { lowFreq, highFreq, amplitude, duration, repeat, pauseDuration } = config;
+        const rumblePacket = encodeRumble(lowFreq, highFreq, amplitude);
+        const stopPacket = encodeRumble(600, 600, 0);
+
+        const sendStop = () => {
+            if (this.#device && !signal.aborted) {
+                this.#device.sendReport(RUMBLE_REPORT_ID, stopPacket).catch((error) => {
+                    console.error('Error sending stop packet:', error);
+                });
+            }
+        };
+
+        while (!signal.aborted) {
+            // Send rumble packet
+            try {
+                await this.#device.sendReport(RUMBLE_REPORT_ID, rumblePacket);
+            } catch (error) {
+                console.error('Error sending rumble packet:', error);
+                throw error;
+            }
+
+            // Send stop packets continuously after duration
+            let stopInterval = null;
+            const stopTimeout = setTimeout(() => {
+                sendStop();
+                stopInterval = setInterval(sendStop, 5);
+            }, duration);
+
+            // Wait for duration
+            await this.#waitWithAbort(duration, signal);
+
+            // Cleanup
+            clearTimeout(stopTimeout);
+            if (stopInterval) clearInterval(stopInterval);
+            sendStop();
+
+            if (signal.aborted || !repeat) break;
+
+            // Wait for pause
+            await this.#waitWithAbort(pauseDuration, signal);
         }
 
-        if (this.#isVibrating && this.#device) {
-            this.#isVibrating = false;
-            this.#notifyStateChange();
+        sendStop();
+    }
 
-            const stopPacket = new Uint8Array(9);
-            this.#device.sendReport(RUMBLE_REPORT_ID, stopPacket).catch(() => {
-                // Ignore stop errors
+    #waitWithAbort(ms, signal) {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(resolve, ms);
+            signal.addEventListener('abort', () => {
+                clearTimeout(timeout);
+                reject(new DOMException('Aborted', 'AbortError'));
             });
+        });
+    }
+
+
+    stop() {
+        if (this.#currentAbortController) {
+            this.#currentAbortController.abort();
+            this.#currentAbortController = null;
         }
     }
 
@@ -203,10 +274,9 @@ export class JoyCon {
 
     handleDisconnect(disconnectedDevice) {
         if (disconnectedDevice === this.#device) {
+            this.stop();
             this.#device = null;
             this.#isConnected = false;
-            this.#isInitialized = false;
-            this.#stopVibration();
             this.#notifyStateChange();
         }
     }
