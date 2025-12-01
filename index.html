@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joy-Con Vibration Controller</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Joy-Con Vibration</h1>
+        <p class="subtitle">Connect your Nintendo Joy-Con and trigger vibration</p>
+        
+        <div id="status" class="status disconnected">
+            Disconnected
+        </div>
+
+        <div class="button-group">
+            <button id="connectBtn" class="connect-btn">Connect Joy-Con</button>
+            <button id="vibrateBtn" class="vibrate-btn" disabled>Vibrate</button>
+        </div>
+
+        <div class="info">
+            <strong>Instructions:</strong><br>
+            1. Click "Connect Joy-Con" and select your Joy-Con from the device list<br>
+            2. Once connected, click "Vibrate" to send a vibration command<br>
+            3. Make sure your Joy-Con is paired with your computer via Bluetooth
+        </div>
+    </div>
+
+    <script type="module">
+        import { JoyCon } from './joycon.mjs';
+
+        // UI Management
+        const connectBtn = document.getElementById('connectBtn');
+        const vibrateBtn = document.getElementById('vibrateBtn');
+        const statusDiv = document.getElementById('status');
+
+        let joyCon = null;
+
+        function updateUI(state) {
+            statusDiv.textContent = state.connected
+                ? `Connected: ${state.deviceName}${state.vibrating ? ' (Vibrating...)' : ''}`
+                : 'Disconnected';
+            statusDiv.className = `status ${state.connected ? 'connected' : 'disconnected'}`;
+            connectBtn.textContent = state.connected ? 'Disconnect' : 'Connect Joy-Con';
+            connectBtn.disabled = false;
+            vibrateBtn.disabled = !state.connected || state.vibrating;
+        }
+
+        function handleStateChange(state) {
+            updateUI(state);
+        }
+
+        async function handleConnect() {
+            if (joyCon?.isConnected) {
+                await joyCon.disconnect();
+                joyCon = null;
+            } else {
+                try {
+                    if (!joyCon) {
+                        joyCon = new JoyCon(handleStateChange);
+                    }
+                    await joyCon.connect();
+                } catch (error) {
+                    updateUI({ connected: false, vibrating: false, deviceName: 'Joy-Con' });
+                    statusDiv.textContent = `Error: ${error.message}`;
+                }
+            }
+        }
+
+        async function handleVibrate() {
+            if (!joyCon?.isConnected) {
+                return;
+            }
+
+            try {
+                await joyCon.vibrate();
+            } catch (error) {
+                statusDiv.textContent = `Vibration error: ${error.message}`;
+            }
+        }
+
+        connectBtn.addEventListener('click', handleConnect);
+        vibrateBtn.addEventListener('click', handleVibrate);
+
+        if (!navigator.hid) {
+            updateUI({ connected: false, vibrating: false, deviceName: 'Joy-Con' });
+            statusDiv.textContent = 'WebHID not supported. Use Chrome/Edge 89+';
+            connectBtn.disabled = true;
+        } else {
+            navigator.hid.addEventListener('disconnect', (event) => {
+                if (joyCon) {
+                    joyCon.handleDisconnect(event.device);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
