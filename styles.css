@@ -591,13 +591,13 @@ button:disabled {
     text-align: center;
 }
 
-.mode-btn:hover {
+.mode-btn:hover:not(.coming-soon) {
     transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     border-color: #667eea;
 }
 
-.mode-btn.multiplayer:hover {
+.mode-btn.multiplayer:hover:not(.coming-soon) {
     border-color: #667eea;
     background: linear-gradient(135deg, #f0f4ff 0%, #e8eaff 100%);
 }
@@ -617,6 +617,58 @@ button:disabled {
     font-weight: 600;
     color: #333;
     letter-spacing: 0.5px;
+}
+
+.coming-soon-badge {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.75em;
+    font-weight: 600;
+    color: #667eea;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.mode-btn.coming-soon {
+    pointer-events: none;
+}
+
+.coming-soon-message {
+    text-align: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8eaff 100%);
+    border-radius: 15px;
+    border: 2px solid #667eea;
+    margin-bottom: 20px;
+}
+
+.coming-soon-message h2 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 1.8em;
+}
+
+.coming-soon-message p {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 1em;
+    line-height: 1.6;
+}
+
+.back-to-home-btn {
+    display: inline-block;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.back-to-home-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
 }
 
 .role-badge.multiplayer {
