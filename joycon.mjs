@@ -54,7 +54,7 @@ const RUMBLE_REPORT_ID = 16;
 const DEFAULT_DURATION = 300;
 
 export class JoyCon {
-    #device = null;
+    #devices = { left: null, right: null };
     #isConnected = false;
     #isVibrating = false;
     #currentAbortController = null;
@@ -73,23 +73,39 @@ export class JoyCon {
     }
 
     get deviceName() {
-        return this.#device?.productName || 'Joy-Con';
+        const names = [];
+        if (this.#devices.left) names.push('Left Joy-Con');
+        if (this.#devices.right) names.push('Right Joy-Con');
+        return names.length > 0 ? names.join(', ') : 'Joy-Con';
     }
 
-    async #sendCommand(reportId, rumbleData, subcommand) {
-        if (!this.#device) throw new Error('Device not connected');
+    get devices() {
+        return {
+            left: this.#devices.left !== null,
+            right: this.#devices.right !== null
+        };
+    }
+
+    async #sendCommand(device, reportId, rumbleData, subcommand) {
+        if (!device) throw new Error('Device not connected');
         const command = new Uint8Array([...rumbleData, ...subcommand]);
-        await this.#device.sendReport(reportId, command);
+        await device.sendReport(reportId, command);
     }
 
-    async #enableStandardFullMode() {
+    async #enableStandardFullMode(device) {
         const rumble = new Uint8Array(9).fill(0);
-        await this.#sendCommand(1, rumble, [0x03, 0x30]);
+        await this.#sendCommand(device, 1, rumble, [0x03, 0x30]);
     }
 
-    async #enableVibration() {
+    async #enableVibration(device) {
         const rumble = new Uint8Array([0x00, 0x00, 0x01, 0x40, 0x40, 0x00, 0x01, 0x40, 0x40]);
-        await this.#sendCommand(1, rumble, [0x48, 0x01]);
+        await this.#sendCommand(device, 1, rumble, [0x48, 0x01]);
+    }
+
+    async #initializeDevice(device) {
+        await device.open();
+        await this.#enableStandardFullMode(device);
+        await this.#enableVibration(device);
     }
 
     async connect() {
@@ -109,19 +125,145 @@ export class JoyCon {
                 throw new Error('No Joy-Con selected');
             }
 
-            this.#device = devices[0];
-            await this.#device.open();
-            await this.#enableStandardFullMode();
-            await this.#enableVibration();
+            // Initialize each device separately
+            for (const device of devices) {
+                const productId = device.productId;
+                if (productId === JOYCON_LEFT_PID) {
+                    await this.#initializeDevice(device);
+                    this.#devices.left = device;
+                } else if (productId === JOYCON_RIGHT_PID) {
+                    await this.#initializeDevice(device);
+                    this.#devices.right = device;
+                }
+            }
 
-            this.#isConnected = true;
+            // Consider connected if at least one device is connected
+            this.#isConnected = this.#devices.left !== null || this.#devices.right !== null;
             this.#notifyStateChange();
         } catch (error) {
-            this.#device = null;
+            // Clean up on error
+            await this.#cleanupDevices();
             this.#isConnected = false;
             this.#notifyStateChange();
             throw error;
         }
+    }
+
+    async connectLeft() {
+        if (this.#devices.left !== null) {
+            throw new Error('Left Joy-Con already connected');
+        }
+
+        try {
+            const devices = await navigator.hid.requestDevice({
+                filters: [
+                    { vendorId: JOYCON_VID, productId: JOYCON_LEFT_PID }
+                ]
+            });
+
+            if (devices.length === 0) {
+                throw new Error('No left Joy-Con selected');
+            }
+
+            const device = devices[0];
+            if (device.productId !== JOYCON_LEFT_PID) {
+                throw new Error('Selected device is not a left Joy-Con');
+            }
+
+            await this.#initializeDevice(device);
+            this.#devices.left = device;
+            this.#isConnected = true;
+            this.#notifyStateChange();
+        } catch (error) {
+            this.#notifyStateChange();
+            throw error;
+        }
+    }
+
+    async connectRight() {
+        if (this.#devices.right !== null) {
+            throw new Error('Right Joy-Con already connected');
+        }
+
+        try {
+            const devices = await navigator.hid.requestDevice({
+                filters: [
+                    { vendorId: JOYCON_VID, productId: JOYCON_RIGHT_PID }
+                ]
+            });
+
+            if (devices.length === 0) {
+                throw new Error('No right Joy-Con selected');
+            }
+
+            const device = devices[0];
+            if (device.productId !== JOYCON_RIGHT_PID) {
+                throw new Error('Selected device is not a right Joy-Con');
+            }
+
+            await this.#initializeDevice(device);
+            this.#devices.right = device;
+            this.#isConnected = true;
+            this.#notifyStateChange();
+        } catch (error) {
+            this.#notifyStateChange();
+            throw error;
+        }
+    }
+
+    async disconnectLeft() {
+        if (this.#devices.left === null) {
+            return;
+        }
+
+        // Stop vibration if running
+        this.stop();
+
+        try {
+            await this.#devices.left.close();
+        } catch (error) {
+            console.error('Error closing left device:', error);
+        }
+
+        this.#devices.left = null;
+        this.#isConnected = this.#devices.left !== null || this.#devices.right !== null;
+        this.#notifyStateChange();
+    }
+
+    async disconnectRight() {
+        if (this.#devices.right === null) {
+            return;
+        }
+
+        // Stop vibration if running
+        this.stop();
+
+        try {
+            await this.#devices.right.close();
+        } catch (error) {
+            console.error('Error closing right device:', error);
+        }
+
+        this.#devices.right = null;
+        this.#isConnected = this.#devices.left !== null || this.#devices.right !== null;
+        this.#notifyStateChange();
+    }
+
+    async #cleanupDevices() {
+        const cleanupPromises = [];
+        if (this.#devices.left) {
+            cleanupPromises.push(
+                this.#devices.left.close().catch(() => {})
+            );
+            this.#devices.left = null;
+        }
+        if (this.#devices.right) {
+            cleanupPromises.push(
+                this.#devices.right.close().catch(() => {})
+            );
+            this.#devices.right = null;
+        }
+        await Promise.all(cleanupPromises);
     }
 
     async disconnect() {
@@ -131,16 +273,7 @@ export class JoyCon {
 
         this.stop();
 
-        try {
-            if (this.#device) {
-                await this.#device.close();
-            }
-        } catch (error) {
-            console.error('Error closing device:', error);
-            // Don't throw - allow disconnect to complete even if close fails
-        }
-
-        this.#device = null;
+        await this.#cleanupDevices();
         this.#isConnected = false;
         this.#notifyStateChange();
     }
@@ -155,7 +288,8 @@ export class JoyCon {
             highFreq = 600,
             amplitude = 0.5,
             duration = DEFAULT_DURATION,
-            repeat = false,
+            repeatMode = 'unlimited',
+            repeatCount = 1,
             pauseDuration = 0,
         } = options;
 
@@ -177,12 +311,13 @@ export class JoyCon {
         this.#notifyStateChange();
 
         try {
-            await this.#runRumbleCycle({
+            await this.#runAlternatingRumble({
                 lowFreq,
                 highFreq,
                 amplitude,
                 duration,
-                repeat,
+                repeatMode,
+                repeatCount,
                 pauseDuration,
             }, signal);
         } catch (error) {
@@ -198,23 +333,29 @@ export class JoyCon {
         }
     }
 
-    async #runRumbleCycle(config, signal) {
-        const { lowFreq, highFreq, amplitude, duration, repeat, pauseDuration } = config;
+    async #runAlternatingRumble(config, signal) {
+        const { lowFreq, highFreq, amplitude, duration, repeatMode, repeatCount, pauseDuration } = config;
         const rumblePacket = encodeRumble(lowFreq, highFreq, amplitude);
         const stopPacket = encodeRumble(600, 600, 0);
 
-        const sendStop = () => {
-            if (this.#device && !signal.aborted) {
-                this.#device.sendReport(RUMBLE_REPORT_ID, stopPacket).catch((error) => {
+        const sendStop = (device) => {
+            if (device && !signal.aborted) {
+                device.sendReport(RUMBLE_REPORT_ID, stopPacket).catch((error) => {
                     console.error('Error sending stop packet:', error);
                 });
             }
         };
 
-        while (!signal.aborted) {
-            // Send rumble packet
+        const sendStopBoth = () => {
+            sendStop(this.#devices.left);
+            sendStop(this.#devices.right);
+        };
+
+        const buzzDevice = async (device, ms) => {
+            if (!device || signal.aborted) return;
+            
             try {
-                await this.#device.sendReport(RUMBLE_REPORT_ID, rumblePacket);
+                await device.sendReport(RUMBLE_REPORT_ID, rumblePacket);
             } catch (error) {
                 console.error('Error sending rumble packet:', error);
                 throw error;
@@ -223,25 +364,57 @@ export class JoyCon {
             // Send stop packets continuously after duration
             let stopInterval = null;
             const stopTimeout = setTimeout(() => {
-                sendStop();
-                stopInterval = setInterval(sendStop, 5);
-            }, duration);
+                sendStop(device);
+                stopInterval = setInterval(() => sendStop(device), 5);
+            }, ms);
 
             // Wait for duration
-            await this.#waitWithAbort(duration, signal);
+            await this.#waitWithAbort(ms, signal);
 
             // Cleanup
             clearTimeout(stopTimeout);
             if (stopInterval) clearInterval(stopInterval);
-            sendStop();
+            sendStop(device);
+        };
 
-            if (signal.aborted || !repeat) break;
+        let cyclesCompleted = 0;
+        const isUnlimited = repeatMode === 'unlimited';
+        const maxCycles = isUnlimited ? Infinity : repeatCount;
 
-            // Wait for pause
+        while (!signal.aborted && cyclesCompleted < maxCycles) {
+            // Left buzz
+            if (this.#devices.left) {
+                await buzzDevice(this.#devices.left, duration);
+            }
+            
+            if (signal.aborted) break;
+
+            // Pause (silent period)
             await this.#waitWithAbort(pauseDuration, signal);
+            
+            if (signal.aborted) break;
+
+            // Right buzz
+            if (this.#devices.right) {
+                await buzzDevice(this.#devices.right, duration);
+            }
+            
+            if (signal.aborted) break;
+
+            cyclesCompleted++;
+
+            // If not unlimited and we've reached the count, break
+            if (!isUnlimited && cyclesCompleted >= maxCycles) {
+                break;
+            }
+
+            // Pause before next cycle (if repeating)
+            if (cyclesCompleted < maxCycles) {
+                await this.#waitWithAbort(pauseDuration, signal);
+            }
         }
 
-        sendStop();
+        sendStopBoth();
     }
 
     #waitWithAbort(ms, signal) {
@@ -267,16 +440,29 @@ export class JoyCon {
             this.#onStateChange({
                 connected: this.#isConnected,
                 vibrating: this.#isVibrating,
-                deviceName: this.deviceName
+                deviceName: this.deviceName,
+                devices: this.devices
             });
         }
     }
 
     handleDisconnect(disconnectedDevice) {
-        if (disconnectedDevice === this.#device) {
-            this.stop();
-            this.#device = null;
-            this.#isConnected = false;
+        let disconnected = false;
+        if (disconnectedDevice === this.#devices.left) {
+            this.#devices.left = null;
+            disconnected = true;
+        }
+        if (disconnectedDevice === this.#devices.right) {
+            this.#devices.right = null;
+            disconnected = true;
+        }
+
+        if (disconnected) {
+            // Stop vibration if no devices remain
+            if (this.#devices.left === null && this.#devices.right === null) {
+                this.stop();
+                this.#isConnected = false;
+            }
             this.#notifyStateChange();
         }
     }

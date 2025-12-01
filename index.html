@@ -38,24 +38,42 @@
             </div>
 
             <div class="control-group">
-                <label for="repeatCheckbox">
-                    <input type="checkbox" id="repeatCheckbox">
-                    Repeat
+                <label for="repeatModeSelect">
+                    Repeat Mode:
                 </label>
+                <select id="repeatModeSelect">
+                    <option value="unlimited">Unlimited</option>
+                    <option value="count">Count</option>
+                </select>
+            </div>
+
+            <div class="control-group" id="repeatCountGroup" style="display: none;">
+                <label for="repeatCountInput">
+                    Repeat Count: <span id="repeatCountValue">1</span>
+                </label>
+                <input type="number" id="repeatCountInput" min="1" value="1" step="1">
             </div>
         </div>
 
         <div class="button-group">
-            <button id="connectBtn" class="connect-btn">Connect Joy-Con</button>
+            <div class="connect-buttons-row">
+                <button id="connectLeftBtn" class="connect-btn">
+                    <span class="check-indicator">[ ]</span> Connect Left
+                </button>
+                <button id="connectRightBtn" class="connect-btn">
+                    <span class="check-indicator">[ ]</span> Connect Right
+                </button>
+            </div>
             <button id="vibrateBtn" class="vibrate-btn" disabled>Vibrate</button>
             <button id="stopBtn" class="stop-btn" style="display: none;">Stop</button>
         </div>
 
         <div class="info">
             <strong>Instructions:</strong><br>
-            1. Click "Connect Joy-Con" and select your Joy-Con from the device list<br>
-            2. Once connected, click "Vibrate" to send a vibration command<br>
-            3. Make sure your Joy-Con is paired with your computer via Bluetooth
+            1. Click "Connect Joy-Con" and select your left and/or right Joy-Con(s) from the device list<br>
+            2. Once connected, click "Vibrate" to start alternating vibration pattern<br>
+            3. Pattern: Left buzz → Pause → Right buzz → Pause → (repeat)<br>
+            4. Make sure your Joy-Con(s) are paired with your computer via Bluetooth
         </div>
     </div>
 
@@ -63,7 +81,8 @@
         import { JoyCon } from './joycon.mjs';
 
         // UI Management
-        const connectBtn = document.getElementById('connectBtn');
+        const connectLeftBtn = document.getElementById('connectLeftBtn');
+        const connectRightBtn = document.getElementById('connectRightBtn');
         const vibrateBtn = document.getElementById('vibrateBtn');
         const stopBtn = document.getElementById('stopBtn');
         const statusDiv = document.getElementById('status');
@@ -74,7 +93,10 @@
         const intensityValue = document.getElementById('intensityValue');
         const pauseSlider = document.getElementById('pauseSlider');
         const pauseValue = document.getElementById('pauseValue');
-        const repeatCheckbox = document.getElementById('repeatCheckbox');
+        const repeatModeSelect = document.getElementById('repeatModeSelect');
+        const repeatCountGroup = document.getElementById('repeatCountGroup');
+        const repeatCountInput = document.getElementById('repeatCountInput');
+        const repeatCountValue = document.getElementById('repeatCountValue');
 
         let joyCon = null;
         let currentRumbleAbortController = null;
@@ -96,7 +118,16 @@
             applyLiveConfig();
         });
 
-        repeatCheckbox.addEventListener('change', () => {
+        repeatModeSelect.addEventListener('change', (e) => {
+            const isCountMode = e.target.value === 'count';
+            repeatCountGroup.style.display = isCountMode ? 'block' : 'none';
+            applyLiveConfig();
+        });
+
+        repeatCountInput.addEventListener('input', (e) => {
+            const value = Math.max(1, parseInt(e.target.value, 10) || 1);
+            repeatCountValue.textContent = value;
+            e.target.value = value;
             applyLiveConfig();
         });
 
@@ -105,7 +136,8 @@
                 duration: parseInt(lengthSlider.value, 10),
                 amplitude: parseFloat(intensitySlider.value),
                 pauseDuration: parseInt(pauseSlider.value, 10),
-                repeat: repeatCheckbox.checked,
+                repeatMode: repeatModeSelect.value,
+                repeatCount: parseInt(repeatCountInput.value, 10) || 1,
             };
         }
 
@@ -129,13 +161,65 @@
                 statusDiv.textContent = error;
                 statusDiv.className = 'status error';
             } else {
-                statusDiv.textContent = state.connected
-                    ? `Connected: ${state.deviceName}${state.vibrating ? ' (Vibrating...)' : ''}`
-                    : 'Disconnected';
+                let statusText = 'Disconnected';
+                if (state.connected) {
+                    const deviceStatus = [];
+                    if (state.devices) {
+                        if (state.devices.left) deviceStatus.push('Left: Connected');
+                        else deviceStatus.push('Left: Disconnected');
+                        if (state.devices.right) deviceStatus.push('Right: Connected');
+                        else deviceStatus.push('Right: Disconnected');
+                    } else {
+                        deviceStatus.push(state.deviceName || 'Joy-Con');
+                    }
+                    statusText = deviceStatus.join(', ');
+                    if (state.vibrating) {
+                        statusText += ' (Vibrating...)';
+                    }
+                }
+                statusDiv.textContent = statusText;
                 statusDiv.className = `status ${state.connected ? 'connected' : 'disconnected'}`;
             }
-            connectBtn.textContent = state.connected ? 'Disconnect' : 'Connect Joy-Con';
-            connectBtn.disabled = false;
+            
+            // Update button states
+            if (state.devices) {
+                const leftIndicator = connectLeftBtn.querySelector('.check-indicator');
+                const rightIndicator = connectRightBtn.querySelector('.check-indicator');
+                
+                if (state.devices.left) {
+                    connectLeftBtn.textContent = '';
+                    leftIndicator.textContent = '[✓]';
+                    connectLeftBtn.appendChild(leftIndicator);
+                    connectLeftBtn.appendChild(document.createTextNode(' Disconnect Left'));
+                    connectLeftBtn.classList.add('connected');
+                } else {
+                    connectLeftBtn.textContent = '';
+                    leftIndicator.textContent = '[ ]';
+                    connectLeftBtn.appendChild(leftIndicator);
+                    connectLeftBtn.appendChild(document.createTextNode(' Connect Left'));
+                    connectLeftBtn.classList.remove('connected');
+                }
+                connectLeftBtn.disabled = state.vibrating;
+                
+                if (state.devices.right) {
+                    connectRightBtn.textContent = '';
+                    rightIndicator.textContent = '[✓]';
+                    connectRightBtn.appendChild(rightIndicator);
+                    connectRightBtn.appendChild(document.createTextNode(' Disconnect Right'));
+                    connectRightBtn.classList.add('connected');
+                } else {
+                    connectRightBtn.textContent = '';
+                    rightIndicator.textContent = '[ ]';
+                    connectRightBtn.appendChild(rightIndicator);
+                    connectRightBtn.appendChild(document.createTextNode(' Connect Right'));
+                    connectRightBtn.classList.remove('connected');
+                }
+                connectRightBtn.disabled = state.vibrating;
+            } else {
+                connectLeftBtn.disabled = false;
+                connectRightBtn.disabled = false;
+            }
+            
             vibrateBtn.disabled = !state.connected || state.vibrating;
 
             // Show/hide stop button
@@ -146,19 +230,49 @@
             updateUI(state);
         }
 
-        async function handleConnect() {
-            if (joyCon?.isConnected) {
-                await joyCon.disconnect();
-                joyCon = null;
-            } else {
-                try {
-                    if (!joyCon) {
-                        joyCon = new JoyCon(handleStateChange);
-                    }
-                    await joyCon.connect();
-                } catch (error) {
-                    updateUI({ connected: false, vibrating: false, deviceName: 'Joy-Con' }, `Error: ${error.message}`);
+        async function handleConnectLeft() {
+            if (!joyCon) {
+                joyCon = new JoyCon(handleStateChange);
+            }
+
+            try {
+                const state = joyCon.devices;
+                if (state.left) {
+                    await joyCon.disconnectLeft();
+                } else {
+                    await joyCon.connectLeft();
                 }
+            } catch (error) {
+                const currentState = joyCon ? {
+                    connected: joyCon.isConnected,
+                    vibrating: joyCon.isVibrating,
+                    deviceName: joyCon.deviceName,
+                    devices: joyCon.devices
+                } : { connected: false, vibrating: false, deviceName: 'Joy-Con', devices: { left: false, right: false } };
+                updateUI(currentState, `Error: ${error.message}`);
+            }
+        }
+
+        async function handleConnectRight() {
+            if (!joyCon) {
+                joyCon = new JoyCon(handleStateChange);
+            }
+
+            try {
+                const state = joyCon.devices;
+                if (state.right) {
+                    await joyCon.disconnectRight();
+                } else {
+                    await joyCon.connectRight();
+                }
+            } catch (error) {
+                const currentState = joyCon ? {
+                    connected: joyCon.isConnected,
+                    vibrating: joyCon.isVibrating,
+                    deviceName: joyCon.deviceName,
+                    devices: joyCon.devices
+                } : { connected: false, vibrating: false, deviceName: 'Joy-Con', devices: { left: false, right: false } };
+                updateUI(currentState, `Error: ${error.message}`);
             }
         }
 
@@ -168,7 +282,12 @@
             }
 
             if (typeof joyCon.rumble !== 'function') {
-                updateUI({ connected: true, vibrating: false, deviceName: joyCon.deviceName }, 'Error: rumble method not available');
+                updateUI({ 
+                    connected: true, 
+                    vibrating: false, 
+                    deviceName: joyCon.deviceName,
+                    devices: joyCon.devices
+                }, 'Error: rumble method not available');
                 return;
             }
 
@@ -182,14 +301,20 @@
                     highFreq: 600,
                     amplitude: config.amplitude,
                     duration: config.duration,
-                    repeat: config.repeat,
+                    repeatMode: config.repeatMode,
+                    repeatCount: config.repeatCount,
                     pauseDuration: config.pauseDuration,
                 }, abortController.signal);
 
                 await currentRumblePromise;
             } catch (error) {
                 if (error.name !== 'AbortError') {
-                    updateUI({ connected: joyCon.isConnected, vibrating: false, deviceName: joyCon.deviceName }, `Vibration error: ${error.message}`);
+                    updateUI({ 
+                        connected: joyCon.isConnected, 
+                        vibrating: false, 
+                        deviceName: joyCon.deviceName,
+                        devices: joyCon.devices
+                    }, `Vibration error: ${error.message}`);
                 }
             } finally {
                 if (currentRumbleAbortController === abortController) {
@@ -213,14 +338,18 @@
             }
         }
 
-        connectBtn.addEventListener('click', handleConnect);
+        connectLeftBtn.addEventListener('click', handleConnectLeft);
+        connectRightBtn.addEventListener('click', handleConnectRight);
         vibrateBtn.addEventListener('click', handleVibrate);
         stopBtn.addEventListener('click', handleStop);
 
+        // Initialize UI
+        updateUI({ connected: false, vibrating: false, deviceName: 'Joy-Con', devices: { left: false, right: false } });
+
         if (!navigator.hid) {
-            updateUI({ connected: false, vibrating: false, deviceName: 'Joy-Con' });
             statusDiv.textContent = 'WebHID not supported. Use Chrome/Edge 89+';
-            connectBtn.disabled = true;
+            connectLeftBtn.disabled = true;
+            connectRightBtn.disabled = true;
         } else {
             navigator.hid.addEventListener('disconnect', (event) => {
                 if (joyCon) {

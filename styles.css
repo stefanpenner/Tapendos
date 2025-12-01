@@ -65,6 +65,28 @@ h1 {
     gap: 15px;
 }
 
+.connect-buttons-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.connect-buttons-row button {
+    flex: 1;
+}
+
+.connect-btn.connected {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+}
+
+.check-indicator {
+    display: inline-block;
+    margin-right: 8px;
+    font-weight: bold;
+    font-family: monospace;
+}
+
 button {
     padding: 15px 30px;
     font-size: 1.1em;
