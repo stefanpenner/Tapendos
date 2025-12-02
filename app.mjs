@@ -2,12 +2,23 @@
  * Main App component
  */
 
-import { useState, useEffect, useRef } from 'preact/hooks';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'preact/hooks';
 import { JoyCon } from './joycon.mjs';
 import * as presetManager from './preset-manager.mjs';
 import * as vibration from './vibration-controller.mjs';
+import { AppContext } from './context.mjs';
+import { createHeader } from './components/Header.mjs';
+import { createStatusDisplay } from './components/StatusDisplay.mjs';
+import { createControls } from './components/Controls.mjs';
+import { createButtonGroup } from './components/ButtonGroup.mjs';
+import { createInfoSection } from './components/InfoSection.mjs';
 
 export function createApp(html) {
+    const Header = createHeader(html);
+    const StatusDisplay = createStatusDisplay(html);
+    const Controls = createControls(html);
+    const ButtonGroup = createButtonGroup(html);
+    const InfoSection = createInfoSection(html);
     return function App() {
         const [status, setStatus] = useState({ text: 'Disconnected', className: 'disconnected' });
         const [leftConnected, setLeftConnected] = useState(false);
@@ -52,9 +63,18 @@ export function createApp(html) {
             repeatCount
         };
 
-        const getCurrentConfig = () => vibration.getCurrentConfig(refs, state);
+        const getCurrentConfig = useCallback(() => {
+            const currentState = {
+                lengthValue,
+                intensityValue,
+                pauseValue,
+                repeatMode,
+                repeatCount
+            };
+            return vibration.getCurrentConfig(refs, currentState);
+        }, [lengthValue, intensityValue, pauseValue, repeatMode, repeatCount]);
 
-        const startRumbleFn = async (config) => {
+        const startRumbleFn = useCallback(async (config) => {
             await vibration.startRumble(
                 joyConRef.current,
                 config,
@@ -62,18 +82,18 @@ export function createApp(html) {
                 currentRumblePromiseRef,
                 setStatus
             );
-        };
+        }, []);
 
-        const applyLiveConfig = async () => {
+        const applyLiveConfig = useCallback(async () => {
             await vibration.applyLiveConfig(
                 joyConRef.current,
                 currentRumbleAbortControllerRef,
                 getCurrentConfig,
                 startRumbleFn
             );
-        };
+        }, [getCurrentConfig, startRumbleFn]);
 
-        const applyPreset = (presetId, { persist = true } = {}) => {
+        const applyPreset = useCallback((presetId, { persist = true } = {}) => {
             const preset = presetManager.findPreset(presetId);
             if (!preset) {
                 activePresetIdRef.current = presetManager.CUSTOM_PRESET_ID;
@@ -116,9 +136,9 @@ export function createApp(html) {
             }
 
             applyLiveConfig();
-        };
+        }, [applyLiveConfig]);
 
-        const handleManualPresetOverride = () => {
+        const handleManualPresetOverride = useCallback(() => {
             if (activePresetIdRef.current === presetManager.CUSTOM_PRESET_ID) {
                 return;
             }
@@ -127,9 +147,9 @@ export function createApp(html) {
             setSelectedPreset(presetManager.CUSTOM_PRESET_ID);
             setPresetActive(false);
             presetManager.persistPresetSelection(presetManager.CUSTOM_PRESET_ID);
-        };
+        }, []);
 
-        const updateUI = (state, error = null) => {
+        const updateUI = useCallback((state, error = null) => {
             if (error) {
                 setStatus({ text: error, className: 'error' });
             } else if (!state.connected) {
@@ -146,9 +166,9 @@ export function createApp(html) {
                     setStatus({ text: 'Connected', className: 'connected' });
                 }
             }
-        };
+        }, []);
 
-        const handleStateChange = (state) => {
+        const handleStateChange = useCallback((state) => {
             setLeftConnected(state.devices.left);
             setRightConnected(state.devices.right);
             setIsVibrating(state.vibrating);
@@ -171,9 +191,9 @@ export function createApp(html) {
             }
 
             updateUI(state);
-        };
+        }, [repeatMode, repeatCount, updateUI]);
 
-        const getCurrentState = () => {
+        const getCurrentState = useCallback(() => {
             return joyConRef.current ? {
                 connected: joyConRef.current.isConnected,
                 vibrating: joyConRef.current.isVibrating,
@@ -189,9 +209,9 @@ export function createApp(html) {
                 vibratingSide: null,
                 remainingCount: null
             };
-        };
+        }, []);
 
-        const handleConnectLeft = async () => {
+        const handleConnectLeft = useCallback(async () => {
             if (!joyConRef.current) {
                 joyConRef.current = new JoyCon(handleStateChange);
             }
@@ -202,9 +222,9 @@ export function createApp(html) {
             } catch (error) {
                 updateUI(getCurrentState(), `Error: ${error.message}`);
             }
-        };
+        }, [handleStateChange, updateUI, getCurrentState]);
 
-        const handleConnectRight = async () => {
+        const handleConnectRight = useCallback(async () => {
             if (!joyConRef.current) {
                 joyConRef.current = new JoyCon(handleStateChange);
             }
@@ -215,9 +235,9 @@ export function createApp(html) {
             } catch (error) {
                 updateUI(getCurrentState(), `Error: ${error.message}`);
             }
-        };
+        }, [handleStateChange, updateUI, getCurrentState]);
 
-        const handleVibrate = async () => {
+        const handleVibrate = useCallback(async () => {
             if (joyConRef.current?.isVibrating) {
                 if (currentRumbleAbortControllerRef.current) {
                     currentRumbleAbortControllerRef.current.abort();
@@ -230,7 +250,7 @@ export function createApp(html) {
                 const config = getCurrentConfig();
                 await startRumbleFn(config);
             }
-        };
+        }, [getCurrentConfig, startRumbleFn]);
 
         useEffect(() => {
             setPresetOptions(presetManager.populatePresetOptions());
@@ -255,213 +275,106 @@ export function createApp(html) {
             }
         }, []);
 
+        // Memoize slices so they only change when their specific values change
+        const connection = useMemo(() => ({
+            leftConnected,
+            rightConnected,
+            leftVibrating,
+            rightVibrating,
+            isVibrating,
+            connectLeft: handleConnectLeft,
+            connectRight: handleConnectRight,
+            vibrate: handleVibrate
+        }), [
+            leftConnected,
+            rightConnected,
+            leftVibrating,
+            rightVibrating,
+            isVibrating,
+            handleConnectLeft,
+            handleConnectRight,
+            handleVibrate
+        ]);
+
+        const vibration = useMemo(() => ({
+            lengthValue,
+            intensityValue,
+            pauseValue,
+            repeatMode,
+            repeatCount,
+            repeatCountDisplay,
+            showRepeatCount,
+            setLengthValue,
+            setIntensityValue,
+            setPauseValue,
+            setRepeatMode,
+            setShowRepeatCount,
+            setRepeatCount,
+            setRepeatCountDisplay,
+            applyLiveConfig
+        }), [
+            lengthValue,
+            intensityValue,
+            pauseValue,
+            repeatMode,
+            repeatCount,
+            repeatCountDisplay,
+            showRepeatCount,
+            setLengthValue,
+            setIntensityValue,
+            setPauseValue,
+            setRepeatMode,
+            setShowRepeatCount,
+            setRepeatCount,
+            setRepeatCountDisplay,
+            applyLiveConfig
+        ]);
+
+        const presets = useMemo(() => ({
+            options: presetOptions,
+            selected: selectedPreset,
+            active: presetActive,
+            apply: applyPreset,
+            handleManualOverride: handleManualPresetOverride,
+            setActive: setPresetActive
+        }), [
+            presetOptions,
+            selectedPreset,
+            presetActive,
+            applyPreset,
+            handleManualPresetOverride,
+            setPresetActive
+        ]);
+
+        // Refs are stable, no need to memoize
+        const contextRefs = {
+            presetSelect: presetSelectRef,
+            activePresetId: activePresetIdRef,
+            isApplyingPreset: isApplyingPresetRef,
+            lengthSlider: lengthSliderRef,
+            intensitySlider: intensitySliderRef,
+            pauseSlider: pauseSliderRef,
+            repeatCountInput: repeatCountInputRef
+        };
+
+        const contextValue = {
+            status,
+            connection,
+            vibration,
+            presets,
+            refs: contextRefs
+        };
+
         return html`
-            <div class="container">
-                <h1>🎮 Tapendos</h1>
-                <p class="subtitle">
-                    Alternating Joy-Con vibration for 
-                    <a href="https://en.wikipedia.org/wiki/Eye_movement_desensitization_and_reprocessing" 
-                       target="_blank" 
-                       rel="noopener noreferrer">EMDR</a>
-                </p>
-                
-                <div id="status" class="status ${status.className}">
-                    ${status.text}
+            <${AppContext.Provider} value=${contextValue}>
+                <div class="container">
+                    <${Header} />
+                    <${StatusDisplay} />
+                    <${Controls} />
+                    <${ButtonGroup} />
+                    <${InfoSection} />
                 </div>
-
-                <div class="controls">
-                    <div class="control-group preset-select-group">
-                        <label for="presetSelect">Presets</label>
-                        <select 
-                            id="presetSelect" 
-                            ref=${presetSelectRef}
-                            class=${presetActive ? 'preset-active' : ''}
-                            value=${selectedPreset}
-                            onChange=${(e) => {
-                                const selectedId = e.target.value;
-                                if (selectedId === presetManager.CUSTOM_PRESET_ID) {
-                                    activePresetIdRef.current = presetManager.CUSTOM_PRESET_ID;
-                                    setPresetActive(false);
-                                    presetManager.persistPresetSelection(presetManager.CUSTOM_PRESET_ID);
-                                } else {
-                                    applyPreset(selectedId);
-                                }
-                            }}
-                        >
-                            ${presetOptions.map(opt => html`
-                                <option value=${opt.value}>${opt.text}</option>
-                            `)}
-                        </select>
-                    </div>
-                    <div class="control-group">
-                        <label for="lengthSlider">
-                            Pulse Length: <span id="lengthValue">${lengthValue}</span>ms
-                        </label>
-                        <input 
-                            type="range" 
-                            id="lengthSlider" 
-                            ref=${lengthSliderRef}
-                            min="10" 
-                            max="2000" 
-                            value=${lengthValue} 
-                            step="10"
-                            onInput=${(e) => {
-                                const val = e.target.value;
-                                setLengthValue(val);
-                                if (!isApplyingPresetRef.current) {
-                                    handleManualPresetOverride();
-                                }
-                                applyLiveConfig();
-                            }}
-                        />
-                    </div>
-
-                    <div class="control-group">
-                        <label for="intensitySlider">
-                            Intensity: <span id="intensityValue">${vibration.formatAmplitudeDisplay(intensityValue)}</span>
-                        </label>
-                        <input 
-                            type="range" 
-                            id="intensitySlider" 
-                            ref=${intensitySliderRef}
-                            min="0" 
-                            max="1" 
-                            value=${intensityValue} 
-                            step="0.05"
-                            onInput=${(e) => {
-                                const val = parseFloat(e.target.value);
-                                setIntensityValue(val);
-                                if (!isApplyingPresetRef.current) {
-                                    handleManualPresetOverride();
-                                }
-                                applyLiveConfig();
-                            }}
-                        />
-                    </div>
-
-                    <div class="control-group">
-                        <label for="pauseSlider">
-                            Pause: <span id="pauseValue">${pauseValue}</span>ms
-                        </label>
-                        <input 
-                            type="range" 
-                            id="pauseSlider" 
-                            ref=${pauseSliderRef}
-                            min="0" 
-                            max="3000" 
-                            value=${pauseValue} 
-                            step="50"
-                            onInput=${(e) => {
-                                const val = e.target.value;
-                                setPauseValue(val);
-                                if (!isApplyingPresetRef.current) {
-                                    handleManualPresetOverride();
-                                }
-                                applyLiveConfig();
-                            }}
-                        />
-                    </div>
-
-                    <div class="control-group repeat-mode-group">
-                        <div class="repeat-mode-wrapper">
-                            <label for="repeatModeSelect">Repeat Mode:</label>
-                            <select 
-                                id="repeatModeSelect"
-                                value=${repeatMode}
-                                onChange=${(e) => {
-                                    const val = e.target.value;
-                                    setRepeatMode(val);
-                                    setShowRepeatCount(val === 'count');
-                                    applyLiveConfig();
-                                }}
-                            >
-                                <option value="unlimited">Unlimited</option>
-                                <option value="count">Count</option>
-                            </select>
-                        </div>
-                        <div 
-                            id="repeatCountGroup" 
-                            class="repeat-count-wrapper" 
-                            style=${showRepeatCount ? 'display: block;' : 'display: none;'}
-                        >
-                            <label for="repeatCountInput">
-                                Repeat Count: <span id="repeatCountValue">${repeatCountDisplay}</span>
-                            </label>
-                            <input 
-                                type="number" 
-                                id="repeatCountInput" 
-                                ref=${repeatCountInputRef}
-                                min="1" 
-                                value=${repeatCount} 
-                                step="1"
-                                onInput=${(e) => {
-                                    let value = parseInt(e.target.value, 10);
-                                    if (isNaN(value) || value < 1) {
-                                        value = 1;
-                                    }
-                                    setRepeatCount(value);
-                                    setRepeatCountDisplay(value);
-                                    e.target.value = value;
-                                    applyLiveConfig();
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div class="button-group">
-                    <div class="connect-buttons-row">
-                        <button 
-                            class="connect-btn ${leftConnected ? 'connected' : ''}"
-                            disabled=${isVibrating}
-                            onClick=${handleConnectLeft}
-                        >
-                            <span class="status-indicator ${leftConnected ? 'connected' : ''} ${leftVibrating ? 'vibrating' : ''}"></span>
-                            <span class="button-label">${leftConnected ? 'Left' : 'Connect Left'}</span>
-                        </button>
-                        <button 
-                            class="connect-btn ${rightConnected ? 'connected' : ''}"
-                            disabled=${isVibrating}
-                            onClick=${handleConnectRight}
-                        >
-                            <span class="status-indicator ${rightConnected ? 'connected' : ''} ${rightVibrating ? 'vibrating' : ''}"></span>
-                            <span class="button-label">${rightConnected ? 'Right' : 'Connect Right'}</span>
-                        </button>
-                    </div>
-                    <button 
-                        id="vibrateBtn" 
-                        class=${isVibrating ? 'stop-btn' : 'vibrate-btn'} 
-                        disabled=${!(leftConnected && rightConnected)}
-                        onClick=${handleVibrate}
-                    >
-                        ${isVibrating ? 'Stop' : 'Vibrate'}
-                    </button>
-                </div>
-
-                <div class="info">
-                    <strong>Note:</strong> Before connecting, make sure your Joy-Cons are paired with your computer via Bluetooth:
-                    <ul class="pairing-list">
-                        <li>
-                            <strong>macOS:</strong> 
-                            <a href="https://support.apple.com/guide/games/connect-a-game-controller-devf8cec167c/mac" 
-                               target="_blank" 
-                               rel="noopener noreferrer">Pairing instructions</a> 
-                            — Hold the sync button on your Joy-Con until lights flash, then select it in System Settings > Bluetooth
-                        </li>
-                        <li>
-                            <strong>Windows:</strong> 
-                            <a href="https://www.tomsguide.com/us/use-joy-cons-on-pc-mac,news-25419.html" 
-                               target="_blank" 
-                               rel="noopener noreferrer">Pairing instructions</a> 
-                            — Hold the sync button, then add via Settings > Devices > Bluetooth
-                        </li>
-                        <li>
-                            <strong>iOS:</strong> Joy-Cons are not compatible with iOS devices. This app requires WebHID support (Chrome/Edge 89+ on desktop)
-                        </li>
-                    </ul>
-                </div>
-            </div>
+            </${AppContext.Provider}>
         `;
     };
 }
-
