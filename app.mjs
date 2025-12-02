@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'preact/hooks';
 import { JoyCon } from './joycon.mjs';
 import * as presetManager from './preset-manager.mjs';
-import * as vibration from './vibration-controller.mjs';
+import * as vibrationController from './vibration-controller.mjs';
 import { AppContext } from './context.mjs';
 import { createHeader } from './components/Header.mjs';
 import { createStatusDisplay } from './components/StatusDisplay.mjs';
@@ -71,11 +71,11 @@ export function createApp(html) {
                 repeatMode,
                 repeatCount
             };
-            return vibration.getCurrentConfig(refs, currentState);
+            return vibrationController.getCurrentConfig(refs, currentState);
         }, [lengthValue, intensityValue, pauseValue, repeatMode, repeatCount]);
 
         const startRumbleFn = useCallback(async (config) => {
-            await vibration.startRumble(
+            await vibrationController.startRumble(
                 joyConRef.current,
                 config,
                 currentRumbleAbortControllerRef,
@@ -85,7 +85,7 @@ export function createApp(html) {
         }, []);
 
         const applyLiveConfig = useCallback(async () => {
-            await vibration.applyLiveConfig(
+            await vibrationController.applyLiveConfig(
                 joyConRef.current,
                 currentRumbleAbortControllerRef,
                 getCurrentConfig,
