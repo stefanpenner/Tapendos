@@ -10,26 +10,26 @@
             navigation: auto;
         }
     </style>
+    <script type="importmap">
+    {
+        "imports": {
+            "preact": "https://unpkg.com/preact@10.19.3/dist/preact.module.js",
+            "preact/hooks": "https://unpkg.com/preact@10.19.3/hooks/dist/hooks.module.js"
+        }
+    }
+    </script>
 </head>
 <body>
-    <div class="container">
-        <h1>🎮 Tapendos</h1>
-        <p class="subtitle">Alternating Joy-Con vibration for <a href="https://en.wikipedia.org/wiki/Eye_movement_desensitization_and_reprocessing" target="_blank" rel="noopener noreferrer">EMDR</a></p>
-        
-        <!-- Mode Selection Screen -->
-        <div class="mode-selection">
-            <div class="mode-options">
-                <a href="singleplayer.html" class="mode-btn singleplayer">
-                    <span class="mode-icon">🎮</span>
-                    <span class="mode-title">Single-player</span>
-                </a>
-                <div class="mode-btn multiplayer coming-soon" style="cursor: not-allowed; opacity: 0.6;">
-                    <span class="mode-icon">👥</span>
-                    <span class="mode-title">Multiplayer</span>
-                    <span class="coming-soon-badge">Coming Soon</span>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div id="app"></div>
+
+    <script type="module">
+        import { h, render } from 'preact';
+        import htm from 'https://unpkg.com/htm?module';
+        const html = htm.bind(h);
+        import { createApp } from './app.mjs';
+
+        const App = createApp(html);
+        render(html`<${App} />`, document.getElementById('app'));
+    </script>
 </body>
 </html>
