@@ -2,39 +2,46 @@
  * Button group component - connect buttons and vibrate button
  */
 
-import { useConnection } from '../context.mjs';
+import { useStore } from '../store.mjs';
 
 export function createButtonGroup(html) {
     return function ButtonGroup() {
-        const conn = useConnection();
+        const leftConnected = useStore(state => state.leftConnected);
+        const rightConnected = useStore(state => state.rightConnected);
+        const leftVibrating = useStore(state => state.leftVibrating);
+        const rightVibrating = useStore(state => state.rightVibrating);
+        const isVibrating = useStore(state => state.isVibrating);
+        const connectLeft = useStore(state => state.connectLeft);
+        const connectRight = useStore(state => state.connectRight);
+        const vibrate = useStore(state => state.vibrate);
 
         return html`
         <div class="button-group">
             <div class="connect-buttons-row">
                 <button 
-                    class="connect-btn ${conn.leftConnected ? 'connected' : ''}"
-                    disabled=${conn.isVibrating}
-                    onClick=${conn.connectLeft}
+                    class="connect-btn ${leftConnected ? 'connected' : ''}"
+                    disabled=${isVibrating}
+                    onClick=${connectLeft}
                 >
-                    <span class="status-indicator ${conn.leftConnected ? 'connected' : ''} ${conn.leftVibrating ? 'vibrating' : ''}"></span>
-                    <span class="button-label">${conn.leftConnected ? 'Left' : 'Connect Left'}</span>
+                    <span class="status-indicator ${leftConnected ? 'connected' : ''} ${leftVibrating ? 'vibrating' : ''}"></span>
+                    <span class="button-label">${leftConnected ? 'Left' : 'Connect Left'}</span>
                 </button>
                 <button 
-                    class="connect-btn ${conn.rightConnected ? 'connected' : ''}"
-                    disabled=${conn.isVibrating}
-                    onClick=${conn.connectRight}
+                    class="connect-btn ${rightConnected ? 'connected' : ''}"
+                    disabled=${isVibrating}
+                    onClick=${connectRight}
                 >
-                    <span class="status-indicator ${conn.rightConnected ? 'connected' : ''} ${conn.rightVibrating ? 'vibrating' : ''}"></span>
-                    <span class="button-label">${conn.rightConnected ? 'Right' : 'Connect Right'}</span>
+                    <span class="status-indicator ${rightConnected ? 'connected' : ''} ${rightVibrating ? 'vibrating' : ''}"></span>
+                    <span class="button-label">${rightConnected ? 'Right' : 'Connect Right'}</span>
                 </button>
             </div>
             <button 
                 id="vibrateBtn" 
-                class=${conn.isVibrating ? 'stop-btn' : 'vibrate-btn'} 
-                disabled=${!(conn.leftConnected && conn.rightConnected)}
-                onClick=${conn.vibrate}
+                class=${isVibrating ? 'stop-btn' : 'vibrate-btn'} 
+                disabled=${!(leftConnected && rightConnected)}
+                onClick=${vibrate}
             >
-                ${conn.isVibrating ? 'Stop' : 'Vibrate'}
+                ${isVibrating ? 'Stop' : 'Vibrate'}
             </button>
         </div>
     `;

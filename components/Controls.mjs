@@ -4,13 +4,32 @@
 
 import * as vibration from '../vibration-controller.mjs';
 import * as presetManager from '../preset-manager.mjs';
-import { useVibration, usePresets, useRefs } from '../context.mjs';
+import { useStore } from '../store.mjs';
 
 export function createControls(html) {
     return function Controls() {
-        const vib = useVibration();
-        const presets = usePresets();
-        const refs = useRefs();
+        const lengthValue = useStore(state => state.lengthValue);
+        const intensityValue = useStore(state => state.intensityValue);
+        const pauseValue = useStore(state => state.pauseValue);
+        const repeatMode = useStore(state => state.repeatMode);
+        const repeatCount = useStore(state => state.repeatCount);
+        const repeatCountDisplay = useStore(state => state.repeatCountDisplay);
+        const showRepeatCount = useStore(state => state.showRepeatCount);
+        const presetOptions = useStore(state => state.presetOptions);
+        const selectedPreset = useStore(state => state.selectedPreset);
+        const presetActive = useStore(state => state.presetActive);
+        const refs = useStore(state => state.refs);
+        const setLengthValue = useStore(state => state.setLengthValue);
+        const setIntensityValue = useStore(state => state.setIntensityValue);
+        const setPauseValue = useStore(state => state.setPauseValue);
+        const setRepeatMode = useStore(state => state.setRepeatMode);
+        const setShowRepeatCount = useStore(state => state.setShowRepeatCount);
+        const setRepeatCount = useStore(state => state.setRepeatCount);
+        const setRepeatCountDisplay = useStore(state => state.setRepeatCountDisplay);
+        const setPresetActive = useStore(state => state.setPresetActive);
+        const applyPreset = useStore(state => state.applyPreset);
+        const handleManualPresetOverride = useStore(state => state.handleManualPresetOverride);
+        const applyLiveConfig = useStore(state => state.applyLiveConfig);
 
     return html`
         <div class="controls">
@@ -18,90 +37,78 @@ export function createControls(html) {
                 <label for="presetSelect">Presets</label>
                 <select 
                     id="presetSelect" 
-                    ref=${refs.presetSelect}
-                    class=${presets.active ? 'preset-active' : ''}
-                    value=${presets.selected}
+                    ref=${(el) => { if (el) refs.presetSelect = el; }}
+                    class=${presetActive ? 'preset-active' : ''}
+                    value=${selectedPreset}
                     onChange=${(e) => {
                         const selectedId = e.target.value;
                         if (selectedId === presetManager.CUSTOM_PRESET_ID) {
                             refs.activePresetId.current = presetManager.CUSTOM_PRESET_ID;
-                            presets.setActive(false);
+                            setPresetActive(false);
                             presetManager.persistPresetSelection(presetManager.CUSTOM_PRESET_ID);
                         } else {
-                            presets.apply(selectedId);
+                            applyPreset(selectedId);
                         }
                     }}
                 >
-                    ${presets.options.map(opt => html`
+                    ${presetOptions.map(opt => html`
                         <option value=${opt.value}>${opt.text}</option>
                     `)}
                 </select>
             </div>
             <div class="control-group">
                 <label for="lengthSlider">
-                    Pulse Length: <span id="lengthValue">${vib.lengthValue}</span>ms
+                    Pulse Length: <span id="lengthValue">${lengthValue}</span>ms
                 </label>
                 <input 
                     type="range" 
                     id="lengthSlider" 
-                    ref=${refs.lengthSlider}
+                    ref=${(el) => { if (el) refs.lengthSlider = el; }}
                     min="10" 
                     max="2000" 
-                    value=${vib.lengthValue} 
+                    value=${lengthValue} 
                     step="10"
                     onInput=${(e) => {
                         const val = e.target.value;
-                        vib.setLengthValue(val);
-                        if (!refs.isApplyingPreset.current) {
-                            presets.handleManualOverride();
-                        }
-                        vib.applyLiveConfig();
+                        setLengthValue(val);
                     }}
                 />
             </div>
 
             <div class="control-group">
                 <label for="intensitySlider">
-                    Intensity: <span id="intensityValue">${vibration.formatAmplitudeDisplay(vib.intensityValue)}</span>
+                    Intensity: <span id="intensityValue">${vibration.formatAmplitudeDisplay(intensityValue)}</span>
                 </label>
                 <input 
                     type="range" 
                     id="intensitySlider" 
-                    ref=${refs.intensitySlider}
+                    ref=${(el) => { if (el) refs.intensitySlider = el; }}
                     min="0" 
                     max="1" 
-                    value=${vib.intensityValue} 
+                    value=${intensityValue} 
                     step="0.05"
                     onInput=${(e) => {
                         const val = parseFloat(e.target.value);
-                        vib.setIntensityValue(val);
-                        if (!refs.isApplyingPreset.current) {
-                            presets.handleManualOverride();
-                        }
-                        vib.applyLiveConfig();
+                        setIntensityValue(val);
                     }}
                 />
             </div>
 
             <div class="control-group">
                 <label for="pauseSlider">
-                    Pause: <span id="pauseValue">${vib.pauseValue}</span>ms
+                    Pause: <span id="pauseValue">${pauseValue}</span>ms
                 </label>
                 <input 
                     type="range" 
                     id="pauseSlider" 
-                    ref=${refs.pauseSlider}
+                    ref=${(el) => { if (el) refs.pauseSlider = el; }}
                     min="0" 
                     max="3000" 
-                    value=${vib.pauseValue} 
+                    value=${pauseValue} 
                     step="50"
                     onInput=${(e) => {
                         const val = e.target.value;
-                        vib.setPauseValue(val);
-                        if (!refs.isApplyingPreset.current) {
-                            presets.handleManualOverride();
-                        }
-                        vib.applyLiveConfig();
+                        setPauseValue(val);
                     }}
                 />
             </div>
@@ -111,12 +118,10 @@ export function createControls(html) {
                     <label for="repeatModeSelect">Repeat Mode:</label>
                     <select 
                         id="repeatModeSelect"
-                        value=${vib.repeatMode}
+                        value=${repeatMode}
                         onChange=${(e) => {
                             const val = e.target.value;
-                            vib.setRepeatMode(val);
-                            vib.setShowRepeatCount(val === 'count');
-                            vib.applyLiveConfig();
+                            setRepeatMode(val);
                         }}
                     >
                         <option value="unlimited">Unlimited</option>
@@ -126,27 +131,26 @@ export function createControls(html) {
                 <div 
                     id="repeatCountGroup" 
                     class="repeat-count-wrapper" 
-                    style=${vib.showRepeatCount ? 'display: block;' : 'display: none;'}
+                    style=${showRepeatCount ? 'display: block;' : 'display: none;'}
                 >
                     <label for="repeatCountInput">
-                        Repeat Count: <span id="repeatCountValue">${vib.repeatCountDisplay}</span>
+                        Repeat Count: <span id="repeatCountValue">${repeatCountDisplay}</span>
                     </label>
                     <input 
                         type="number" 
                         id="repeatCountInput" 
-                        ref=${refs.repeatCountInput}
+                        ref=${(el) => { if (el) refs.repeatCountInput = el; }}
                         min="1" 
-                        value=${vib.repeatCount} 
+                        value=${repeatCount} 
                         step="1"
                         onInput=${(e) => {
                             let value = parseInt(e.target.value, 10);
                             if (isNaN(value) || value < 1) {
                                 value = 1;
                             }
-                            vib.setRepeatCount(value);
-                            vib.setRepeatCountDisplay(value);
+                            setRepeatCount(value);
+                            setRepeatCountDisplay(value);
                             e.target.value = value;
-                            vib.applyLiveConfig();
                         }}
                     />
                 </div>
