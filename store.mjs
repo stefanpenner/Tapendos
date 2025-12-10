@@ -37,8 +37,8 @@ let storeState = {
     // Refs (mutable object)
     refs: {
         joyCon: null,
-        currentRumbleAbortController: null,
-        currentRumblePromise: null,
+        currentRumbleAbortController: { current: null },
+        currentRumblePromise: { current: null },
         activePresetId: { current: presetManager.CUSTOM_PRESET_ID },
         isApplyingPreset: { current: false },
         lengthSlider: null,
@@ -177,9 +177,9 @@ export const storeActions = {
     async vibrate() {
         const state = getInternalState();
         if (state.refs.joyCon?.isVibrating) {
-            if (state.refs.currentRumbleAbortController) {
-                state.refs.currentRumbleAbortController.abort();
-                state.refs.currentRumbleAbortController = null;
+            if (state.refs.currentRumbleAbortController.current) {
+                state.refs.currentRumbleAbortController.current.abort();
+                state.refs.currentRumbleAbortController.current = null;
             }
             if (state.refs.joyCon) {
                 state.refs.joyCon.stop();
@@ -307,14 +307,17 @@ export const storeActions = {
     updateUI(state, error = null) {
         if (error) {
             setState({ status: { text: error, className: 'error' } });
-        } else if (!state.connected) {
-            setState({ status: { text: 'No Joy-Con connected', className: 'disconnected' } });
         } else {
             const devices = state.devices || { left: false, right: false };
-            const connectedCount = (devices.left ? 1 : 0) + (devices.right ? 1 : 0);
+            const leftConnected = devices.left;
+            const rightConnected = devices.right;
             
-            if (connectedCount === 1) {
-                setState({ status: { text: '1/2 Joy-Con Connected • connect both to enable vibration', className: 'connected' } });
+            if (!leftConnected && !rightConnected) {
+                setState({ status: { text: 'no joy-con connected', className: 'disconnected' } });
+            } else if (!leftConnected) {
+                setState({ status: { text: 'left joy-con not connected', className: 'disconnected' } });
+            } else if (!rightConnected) {
+                setState({ status: { text: 'right joy-con not connected', className: 'disconnected' } });
             } else {
                 setState({ status: { text: 'Connected', className: 'connected' } });
             }

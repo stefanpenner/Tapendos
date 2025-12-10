@@ -3,13 +3,17 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --test *.test.mjs",
-    "dev": "node dev.js",
-    "build": "bun run build.js",
-    "preview": "bun --bun run main.js"
+    "test": "bun test",
+    "dev": "bun dev-server.js",
+    "build": "bun build.js",
+    "preview": "bun preview-server.js"
   },
   "dependencies": {
     "preact": "^10.19.3",
     "htm": "^3.1.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "babel-plugin-htm": "^3.0.0"
   }
 }
