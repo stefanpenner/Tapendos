@@ -23,6 +23,9 @@ export function createControls(html) {
         const presetOptions = presets.presetOptions;
         const selectedPreset = presets.selectedPreset;
         const presetActive = presets.presetActive;
+        const showAdvancedControls = state.context?.showAdvancedControls ?? false;
+        const isCustomPreset = selectedPreset === presetManager.CUSTOM_PRESET_ID;
+        const shouldShowSliders = showAdvancedControls || isCustomPreset;
         
         const setLengthValue = (val) => send({ type: 'setLength', value: parseInt(val, 10) });
         const setIntensityValue = (val) => send({ type: 'setIntensity', value: parseFloat(val) });
@@ -31,6 +34,7 @@ export function createControls(html) {
         const setRepeatCount = (val) => send({ type: 'setRepeatCount', value: val });
         const setRepeatCountDisplay = (val) => send({ type: 'setRepeatCountDisplay', value: val });
         const applyPreset = (presetId) => send({ type: 'applyPreset', presetId, persist: true });
+        const toggleAdvanced = () => send({ type: 'toggleAdvancedControls' });
 
     return html`
         <div class="controls">
@@ -48,6 +52,9 @@ export function createControls(html) {
                             send({ type: 'setPresetActive', value: false });
                             presetManager.persistPresetSelection(presetManager.CUSTOM_PRESET_ID);
                             send({ type: 'manualOverride' });
+                            if (!showAdvancedControls) {
+                                send({ type: 'toggleAdvancedControls' });
+                            }
                         } else {
                             applyPreset(selectedId);
                         }
@@ -60,6 +67,16 @@ export function createControls(html) {
                     `}
                 </select>
             </div>
+            ${!isCustomPreset ? html`
+                <button 
+                    type="button"
+                    class="toggle-advanced-btn"
+                    onClick=${toggleAdvanced}
+                >
+                    ${showAdvancedControls ? '▼' : '▶'} ${showAdvancedControls ? 'Hide' : 'Show'} Advanced Settings
+                </button>
+            ` : ''}
+            <div class="advanced-controls" style=${shouldShowSliders ? 'display: block;' : 'display: none;'}>
             <div class="control-group">
                 <label for="lengthSlider">
                     Pulse Length: <span id="lengthValue">${lengthValue}</span>ms
@@ -158,6 +175,7 @@ export function createControls(html) {
                         }}
                     />
                 </div>
+            </div>
             </div>
         </div>
     `;

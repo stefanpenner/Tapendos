@@ -1,0 +1,89 @@
+<svg width="512" height="512" viewBox="0 0 512 512"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Background -->
+  <rect x="0" y="0" width="512" height="512" fill="#4C3B76"/>
+
+  <!-- Left Joy-Con -->
+  <rect x="82" y="110" width="104" height="280" rx="52"
+        fill="#32C6D4" stroke="#231F20" stroke-width="6"/>
+
+  <!-- Left stick -->
+  <circle cx="134" cy="170" r="20" fill="#231F20"/>
+  <!-- Left buttons -->
+  <circle cx="120" cy="228" r="8" fill="#231F20"/>
+  <circle cx="148" cy="248" r="8" fill="#231F20"/>
+  <circle cx="120" cy="270" r="8" fill="#231F20"/>
+  <circle cx="148" cy="292" r="8" fill="#231F20"/>
+  <!-- Left small square -->
+  <rect x="128" y="324" width="16" height="16" rx="2" fill="#231F20"/>
+
+  <!-- Right Joy-Con -->
+  <rect x="326" y="110" width="104" height="280" rx="52"
+        fill="#FF6F61" stroke="#231F20" stroke-width="6"/>
+
+  <!-- Right buttons A/B/X/Y -->
+  <circle cx="362" cy="190" r="8" fill="#231F20"/>
+  <circle cx="392" cy="190" r="8" fill="#231F20"/>
+  <circle cx="362" cy="216" r="8" fill="#231F20"/>
+  <circle cx="392" cy="216" r="8" fill="#231F20"/>
+  <!-- Right stick -->
+  <circle cx="377" cy="246" r="20" fill="#231F20"/>
+  <!-- Right small button -->
+  <circle cx="377" cy="310" r="8" fill="#231F20"/>
+
+  <!-- Brain (cloud-like, centered) -->
+  <g>
+    <path d="
+      M256 150
+      C232 150 214 166 210 188
+      C194 192 182 207 182 225
+      C182 248 199 266 222 268
+      C226 286 239 302 256 302
+      C273 302 286 286 290 268
+      C313 266 330 248 330 225
+      C330 207 318 192 302 188
+      C298 166 280 150 256 150 Z"
+      fill="#4C3B76" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round"/>
+
+    <!-- Left inner curve -->
+    <path d="M236 176
+             C226 186 226 199 234 208
+             C242 217 242 229 235 238"
+          fill="none" stroke="#FFFFFF" stroke-width="4"
+          stroke-linecap="round"/>
+
+    <!-- Right inner curve -->
+    <path d="M276 176
+             C286 186 286 199 278 208
+             C270 217 270 229 277 238"
+          fill="none" stroke="#FFFFFF" stroke-width="4"
+          stroke-linecap="round"/>
+  </g>
+
+  <!-- Waves under brain -->
+  <g stroke="#FFFFFF" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M196 320
+             C212 313 228 313 244 320
+             C260 327 276 327 292 320
+             C308 313 324 313 340 320"/>
+    <path d="M196 338
+             C212 331 228 331 244 338
+             C260 345 276 345 292 338
+             C308 331 324 331 340 338"/>
+    <path d="M196 356
+             C212 349 228 349 244 356
+             C260 363 276 363 292 356
+             C308 349 324 349 340 356"/>
+  </g>
+
+  <!-- EMDR text -->
+  <text x="256" y="430"
+        text-anchor="middle"
+        font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        font-size="60"
+        fill="#F5E9FF"
+        letter-spacing="4">
+    EMDR
+  </text>
+</svg>

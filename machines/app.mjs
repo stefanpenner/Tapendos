@@ -35,10 +35,11 @@ export const appMachine = createMachine({
         
         // Presets
         presetOptions: [],
-        selectedPreset: presetManager.CUSTOM_PRESET_ID,
+        selectedPreset: 'standard-processing',
         presetActive: false,
-        activePresetId: presetManager.CUSTOM_PRESET_ID,
+        activePresetId: 'standard-processing',
         isApplyingPreset: false,
+        showAdvancedControls: false,
         
         // Status
         status: { text: 'Disconnected', className: 'disconnected' }
@@ -172,6 +173,9 @@ export const appMachine = createMachine({
                 setPresetActive: {
                     actions: 'updatePresetActive'
                 },
+                toggleAdvancedControls: {
+                    actions: 'toggleAdvancedControls'
+                },
                 connectLeftAction: {
                     actions: 'connectLeft'
                 },
@@ -183,6 +187,9 @@ export const appMachine = createMachine({
                 },
                 connectionError: {
                     actions: 'setConnectionError'
+                },
+                setStatus: {
+                    actions: 'setStatus'
                 }
             }
         },
@@ -254,6 +261,10 @@ export const appMachine = createMachine({
             errorMessage: (_, event) => event?.error || null,
             status: (_, event) => actions.getStatusFromConnection('error', event?.error || null)
         }),
+        // Test-only action to set status directly (for testing)
+        setStatus: assign({
+            status: (_, event) => event.status || { text: 'Loading...', className: 'disconnected' }
+        }),
         
         // Settings updates
         updateLength: assign({ lengthValue: (_, event) => event.value }),
@@ -283,6 +294,7 @@ export const appMachine = createMachine({
         // Preset updates
         updatePresetOptions: assign({ presetOptions: (_, event) => event?.presetOptions || [] }),
         updatePresetActive: assign({ presetActive: (_, event) => event?.value ?? false }),
+        toggleAdvancedControls: assign({ showAdvancedControls: (context) => !context.showAdvancedControls }),
         applyPreset: assign((context, event) => {
             if (!event?.presetId) return {};
             const updates = actions.applyPreset(context, event.presetId, event.persist !== false);
@@ -294,24 +306,28 @@ export const appMachine = createMachine({
         }),
         
         // Vibration actions
-        startVibration: async (context) => {
-            await actions.startVibration(context);
+        startVibration: async ({ context, self }) => {
+            const send = self.send.bind(self);
+            await actions.startVibration({ context, send });
         },
         stopVibration: () => {
             actions.stopVibration();
         },
-        applyLiveConfig: async (context) => {
+        applyLiveConfig: async ({ context, self }) => {
             if (!refs.isApplyingPreset.current) {
-                await actions.applyLiveConfig(context);
+                const send = self.send.bind(self);
+                await actions.applyLiveConfig({ context, send });
             }
         },
         
         // Connection actions
-        connectLeft: async () => {
-            await actions.connectLeft();
+        connectLeft: async ({ self }) => {
+            const send = self.send.bind(self);
+            await actions.connectLeft({ send });
         },
-        connectRight: async () => {
-            await actions.connectRight();
+        connectRight: async ({ self }) => {
+            const send = self.send.bind(self);
+            await actions.connectRight({ send });
         },
         
         // JoyCon state change handler

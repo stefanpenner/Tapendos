@@ -28,9 +28,9 @@ export function createButtonGroup(html) {
 
         return html`
         <div class="button-group">
-            <div class="connect-buttons-row">
+            <div class="controller-buttons-container">
                 <button 
-                    class="connect-btn ${leftConnected ? 'connected' : ''}"
+                    class="connect-btn connect-btn-left ${leftConnected ? 'connected' : ''}"
                     disabled=${isVibrating}
                     onClick=${connectLeft}
                 >
@@ -38,7 +38,15 @@ export function createButtonGroup(html) {
                     <span class="button-label">${leftConnected ? 'Left' : 'Connect Left'}</span>
                 </button>
                 <button 
-                    class="connect-btn ${rightConnected ? 'connected' : ''}"
+                    id="vibrateBtn" 
+                    class=${isVibrating ? 'stop-btn' : leftConnected && rightConnected ? 'vibrate-btn ready' : 'vibrate-btn'} 
+                    disabled=${!(leftConnected && rightConnected)}
+                    onClick=${vibrate}
+                >
+                    ${isVibrating ? 'Stop' : 'Vibrate'}
+                </button>
+                <button 
+                    class="connect-btn connect-btn-right ${rightConnected ? 'connected' : ''}"
                     disabled=${isVibrating}
                     onClick=${connectRight}
                 >
@@ -46,14 +54,6 @@ export function createButtonGroup(html) {
                     <span class="button-label">${rightConnected ? 'Right' : 'Connect Right'}</span>
                 </button>
             </div>
-            <button 
-                id="vibrateBtn" 
-                class=${isVibrating ? 'stop-btn' : leftConnected && rightConnected ? 'vibrate-btn ready' : 'vibrate-btn'} 
-                disabled=${!(leftConnected && rightConnected)}
-                onClick=${vibrate}
-            >
-                ${isVibrating ? 'Stop' : 'Vibrate'}
-            </button>
         </div>
     `;
     };

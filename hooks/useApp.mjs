@@ -2,23 +2,53 @@
  * Hook for accessing the app state machine
  */
 
+import { createContext } from 'preact';
+import { useContext, useState, useEffect, useMemo } from 'preact/hooks';
 import { createActor } from 'xstate';
 import { appMachine } from '../machines/app.mjs';
 import { refs } from '../refs.mjs';
-import { useState, useEffect, useMemo } from 'preact/hooks';
 
-let appActor = null;
+// Create context for the app actor
+const AppActorContext = createContext(null);
 
 /**
- * Get or create the app machine actor
+ * Provider component that creates and manages the app actor
+ * Accepts an optional `actor` prop for testing
  */
-function getAppActor() {
-    if (!appActor) {
-        appActor = createActor(appMachine);
-        appActor.start();
-        refs.appMachineActor = appActor;
-    }
-    return appActor;
+export function AppActorProvider({ children, html, actor: providedActor }) {
+    const actor = useMemo(() => {
+        if (providedActor) {
+            // Use provided actor (for testing)
+            refs.appMachineActor = providedActor;
+            return providedActor;
+        }
+        // Create new actor (for production)
+        const newActor = createActor(appMachine);
+        newActor.start();
+        // Keep refs for backward compatibility with app-actions
+        refs.appMachineActor = newActor;
+        return newActor;
+    }, [providedActor]);
+
+    useEffect(() => {
+        if (!providedActor) {
+            // Only start if we created the actor
+            actor.start();
+        }
+        return () => {
+            if (!providedActor) {
+                // Only stop if we created the actor
+                actor.stop();
+            }
+            refs.appMachineActor = null;
+        };
+    }, [actor, providedActor]);
+
+    return html`
+        <${AppActorContext.Provider} value=${actor}>
+            ${children}
+        <//>
+    `;
 }
 
 /**
@@ -26,7 +56,12 @@ function getAppActor() {
  * Returns [state, send] tuple similar to useActor
  */
 export function useApp() {
-    const actor = useMemo(() => getAppActor(), []);
+    const actor = useContext(AppActorContext);
+    
+    if (!actor) {
+        throw new Error('useApp must be used within AppActorProvider');
+    }
+    
     const [state, setState] = useState(actor.getSnapshot());
     
     useEffect(() => {

@@ -3,7 +3,7 @@
  */
 
 import { useEffect } from 'preact/hooks';
-import { useApp } from './hooks/useApp.mjs';
+import { AppActorProvider, useApp } from './hooks/useApp.mjs';
 import * as presetManager from './preset-manager.mjs';
 import { refs } from './refs.mjs';
 import { createHeader } from './components/Header.mjs';
@@ -19,7 +19,7 @@ export function createApp(html) {
     const ButtonGroup = createButtonGroup(html);
     const InfoSection = createInfoSection(html);
     
-    return function App() {
+    function AppContent() {
         const [state, send] = useApp();
         
         useEffect(() => {
@@ -30,6 +30,9 @@ export function createApp(html) {
             const storedPresetId = presetManager.loadStoredPreset();
             if (storedPresetId && presetManager.findPreset(storedPresetId)) {
                 send({ type: 'applyPreset', presetId: storedPresetId, persist: false });
+            } else {
+                // Default to standard-processing preset
+                send({ type: 'applyPreset', presetId: 'standard-processing', persist: false });
             }
             
             // Set initial connection state
@@ -53,6 +56,14 @@ export function createApp(html) {
                 <${ButtonGroup} />
                 <${InfoSection} />
             </div>
+        `;
+    }
+    
+    return function App() {
+        return html`
+            <${AppActorProvider} html=${html}>
+                <${AppContent} />
+            <//>
         `;
     };
 }

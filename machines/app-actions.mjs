@@ -31,8 +31,7 @@ export function getCurrentConfig(context) {
 /**
  * Start vibration with current config
  */
-export async function startVibration(context) {
-    const send = getSend();
+export async function startVibration({ context, send }) {
     const config = getCurrentConfig(context);
     
     // Only send error status updates, not success messages
@@ -43,7 +42,7 @@ export async function startVibration(context) {
         refs.currentRumblePromise,
         (status) => {
             // Only send error status updates to machine
-            if (send && status && status.className === 'error') {
+            if (status && status.className === 'error') {
                 send({ type: 'connectionError', error: status.text });
             }
         }
@@ -66,30 +65,22 @@ export function stopVibration() {
 /**
  * Apply live config (restart vibration if currently vibrating)
  */
-export async function applyLiveConfig(context) {
+export async function applyLiveConfig({ context, send }) {
     await vibrationController.applyLiveConfig(
         refs.joyCon,
         refs.currentRumbleAbortController,
         () => getCurrentConfig(context),
-        (config) => startVibration(context)
+        (config) => startVibration({ context, send })
     );
-}
-
-/**
- * Get send function from actor
- */
-export function getSend() {
-    return refs.appMachineActor ? refs.appMachineActor.send.bind(refs.appMachineActor) : null;
 }
 
 /**
  * Connect left Joy-Con
  */
-export async function connectLeft() {
-    const send = getSend();
+export async function connectLeft({ send }) {
     if (!refs.joyCon) {
         refs.joyCon = new JoyCon((state) => {
-            if (send) send({ type: 'joyconStateChange', state });
+            send({ type: 'joyconStateChange', state });
         });
     }
     
@@ -109,33 +100,33 @@ export async function connectLeft() {
             // If both were already connected, no transition needed
             if (!wasLeft && wasRight) {
                 // Left was just connected, we're in rightConnected state
-                if (send) send({ type: 'connectLeft' });
+                send({ type: 'connectLeft' });
             } else if (wasLeft && !wasRight) {
                 // Right was just connected, we're in leftConnected state
-                if (send) send({ type: 'connectRight' });
+                send({ type: 'connectRight' });
             } else if (!wasLeft && !wasRight) {
                 // Both were just connected from disconnected state
-                if (send) send({ type: 'connectBoth' });
+                send({ type: 'connectBoth' });
             }
         } else if (newDevices.left && !newDevices.right) {
             // Only left connected
             if (!wasLeft) {
-                if (send) send({ type: 'connectLeft' });
+                send({ type: 'connectLeft' });
             } else if (wasRight) {
                 // Right was disconnected
-                if (send) send({ type: 'disconnectRight' });
+                send({ type: 'disconnectRight' });
             }
         } else if (newDevices.right && !newDevices.left) {
             // Only right connected
             if (!wasRight) {
-                if (send) send({ type: 'connectRight' });
+                send({ type: 'connectRight' });
             } else if (wasLeft) {
                 // Left was disconnected
-                if (send) send({ type: 'disconnectLeft' });
+                send({ type: 'disconnectLeft' });
             }
         } else {
             // Neither connected
-            if (send) send({ type: 'disconnectAll' });
+            send({ type: 'disconnectAll' });
         }
     } catch (error) {
         // If user cancelled device picker, don't show error - just update state
@@ -155,10 +146,10 @@ export async function connectLeft() {
                 vibratingSide: null,
                 remainingCount: null
             };
-            if (send) send({ type: 'joyconStateChange', state: currentState });
+            send({ type: 'joyconStateChange', state: currentState });
         } else {
             // For other errors, show briefly then allow retry
-            if (send) send({ type: 'connectionError', error: error.message });
+            send({ type: 'connectionError', error: error.message });
             setTimeout(() => {
                 const currentState = refs.joyCon ? {
                     connected: refs.joyCon.isConnected,
@@ -175,7 +166,7 @@ export async function connectLeft() {
                     vibratingSide: null,
                     remainingCount: null
                 };
-                if (send) send({ type: 'joyconStateChange', state: currentState });
+                send({ type: 'joyconStateChange', state: currentState });
             }, 2000);
         }
     }
@@ -184,11 +175,10 @@ export async function connectLeft() {
 /**
  * Connect right Joy-Con
  */
-export async function connectRight() {
-    const send = getSend();
+export async function connectRight({ send }) {
     if (!refs.joyCon) {
         refs.joyCon = new JoyCon((state) => {
-            if (send) send({ type: 'joyconStateChange', state });
+            send({ type: 'joyconStateChange', state });
         });
     }
     
@@ -208,33 +198,33 @@ export async function connectRight() {
             // If both were already connected, no transition needed
             if (!wasLeft && wasRight) {
                 // Left was just connected, we're in rightConnected state
-                if (send) send({ type: 'connectLeft' });
+                send({ type: 'connectLeft' });
             } else if (wasLeft && !wasRight) {
                 // Right was just connected, we're in leftConnected state
-                if (send) send({ type: 'connectRight' });
+                send({ type: 'connectRight' });
             } else if (!wasLeft && !wasRight) {
                 // Both were just connected from disconnected state
-                if (send) send({ type: 'connectBoth' });
+                send({ type: 'connectBoth' });
             }
         } else if (newDevices.left && !newDevices.right) {
             // Only left connected
             if (!wasLeft) {
-                if (send) send({ type: 'connectLeft' });
+                send({ type: 'connectLeft' });
             } else if (wasRight) {
                 // Right was disconnected
-                if (send) send({ type: 'disconnectRight' });
+                send({ type: 'disconnectRight' });
             }
         } else if (newDevices.right && !newDevices.left) {
             // Only right connected
             if (!wasRight) {
-                if (send) send({ type: 'connectRight' });
+                send({ type: 'connectRight' });
             } else if (wasLeft) {
                 // Left was disconnected
-                if (send) send({ type: 'disconnectLeft' });
+                send({ type: 'disconnectLeft' });
             }
         } else {
             // Neither connected
-            if (send) send({ type: 'disconnectAll' });
+            send({ type: 'disconnectAll' });
         }
     } catch (error) {
         // If user cancelled device picker, don't show error - just update state
@@ -254,10 +244,10 @@ export async function connectRight() {
                 vibratingSide: null,
                 remainingCount: null
             };
-            if (send) send({ type: 'joyconStateChange', state: currentState });
+            send({ type: 'joyconStateChange', state: currentState });
         } else {
             // For other errors, show briefly then allow retry
-            if (send) send({ type: 'connectionError', error: error.message });
+            send({ type: 'connectionError', error: error.message });
             setTimeout(() => {
                 const currentState = refs.joyCon ? {
                     connected: refs.joyCon.isConnected,
@@ -274,7 +264,7 @@ export async function connectRight() {
                     vibratingSide: null,
                     remainingCount: null
                 };
-                if (send) send({ type: 'joyconStateChange', state: currentState });
+                send({ type: 'joyconStateChange', state: currentState });
             }, 2000);
         }
     }
@@ -292,7 +282,8 @@ export function applyPreset(context, presetId, persist = true) {
         return {
             selectedPreset: presetManager.CUSTOM_PRESET_ID,
             presetActive: false,
-            activePresetId: presetManager.CUSTOM_PRESET_ID
+            activePresetId: presetManager.CUSTOM_PRESET_ID,
+            showAdvancedControls: true
         };
     }
     
@@ -323,7 +314,8 @@ export function applyPreset(context, presetId, persist = true) {
         repeatMode: preset.values.repeatMode ?? context.repeatMode,
         repeatCount: preset.values.repeatCount ?? context.repeatCount,
         repeatCountDisplay: preset.values.repeatCount ?? context.repeatCount,
-        showRepeatCount: preset.values.repeatMode === 'count'
+        showRepeatCount: preset.values.repeatMode === 'count',
+        showAdvancedControls: presetId === presetManager.CUSTOM_PRESET_ID
     };
 }
 
