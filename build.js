@@ -87,9 +87,18 @@ if (!result.success) {
   process.exit(1);
 }
 
-// Copy HTML and CSS files
+// Copy HTML, CSS, and static assets
 await copyFile('index.html', 'dist/index.html');
 await copyFile('styles.css', 'dist/styles.css');
+// Copy logo file if it exists (png, jpg, webp, or svg)
+const logoExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.svg'];
+for (const ext of logoExtensions) {
+  const logoPath = `logo${ext}`;
+  if (existsSync(logoPath)) {
+    await copyFile(logoPath, `dist/logo${ext}`);
+    break;
+  }
+}
 
 // Update index.html to reference the bundled file and remove import map
 const htmlContent = await readFile('dist/index.html', 'utf-8');

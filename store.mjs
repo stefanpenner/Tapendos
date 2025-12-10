@@ -4,9 +4,11 @@
  */
 
 import { useState, useEffect, useRef } from 'preact/hooks';
+import { interpret } from 'xstate';
 import { JoyCon } from './joycon.mjs';
 import * as presetManager from './preset-manager.mjs';
 import * as vibrationController from './vibration-controller.mjs';
+import { joyConMachine, getStatusFromState, updateFromDevices } from './machines/joycon.mjs';
 
 // Global store state
 let storeState = {
@@ -37,6 +39,7 @@ let storeState = {
     // Refs (mutable object)
     refs: {
         joyCon: null,
+        joyConStateService: null,
         currentRumbleAbortController: { current: null },
         currentRumblePromise: { current: null },
         activePresetId: { current: presetManager.CUSTOM_PRESET_ID },
@@ -156,7 +159,19 @@ export const storeActions = {
             const devices = state.refs.joyCon.devices;
             await (devices.left ? state.refs.joyCon.disconnectLeft() : state.refs.joyCon.connectLeft());
         } catch (error) {
-            storeActions.updateUI(storeActions.getCurrentState(), `Error: ${error.message}`);
+            // If user cancelled device picker, don't show error - just update state
+            // This allows immediate retry
+            if (error.message.includes('No') && error.message.includes('selected')) {
+                const currentState = storeActions.getCurrentState();
+                storeActions.updateUI(currentState, null);
+            } else {
+                // For other errors, show briefly then allow retry
+                storeActions.updateUI(storeActions.getCurrentState(), `Error: ${error.message}`);
+                setTimeout(() => {
+                    const currentState = storeActions.getCurrentState();
+                    storeActions.updateUI(currentState, null);
+                }, 2000);
+            }
         }
     },
     
@@ -170,7 +185,19 @@ export const storeActions = {
             const devices = state.refs.joyCon.devices;
             await (devices.right ? state.refs.joyCon.disconnectRight() : state.refs.joyCon.connectRight());
         } catch (error) {
-            storeActions.updateUI(storeActions.getCurrentState(), `Error: ${error.message}`);
+            // If user cancelled device picker, don't show error - just update state
+            // This allows immediate retry
+            if (error.message.includes('No') && error.message.includes('selected')) {
+                const currentState = storeActions.getCurrentState();
+                storeActions.updateUI(currentState, null);
+            } else {
+                // For other errors, show briefly then allow retry
+                storeActions.updateUI(storeActions.getCurrentState(), `Error: ${error.message}`);
+                setTimeout(() => {
+                    const currentState = storeActions.getCurrentState();
+                    storeActions.updateUI(currentState, null);
+                }, 2000);
+            }
         }
     },
     
@@ -305,23 +332,36 @@ export const storeActions = {
     
     // UI helpers
     updateUI(state, error = null) {
-        if (error) {
-            setState({ status: { text: error, className: 'error' } });
-        } else {
-            const devices = state.devices || { left: false, right: false };
-            const leftConnected = devices.left;
-            const rightConnected = devices.right;
-            
-            if (!leftConnected && !rightConnected) {
-                setState({ status: { text: 'no joy-con connected', className: 'disconnected' } });
-            } else if (!leftConnected) {
-                setState({ status: { text: 'left joy-con not connected', className: 'disconnected' } });
-            } else if (!rightConnected) {
-                setState({ status: { text: 'right joy-con not connected', className: 'disconnected' } });
+        const currentState = getInternalState();
+        const service = currentState.refs.joyConStateService;
+        
+        if (!service) {
+            // Fallback to old behavior if service not initialized
+            if (error) {
+                setState({ status: { text: error, className: 'error' } });
             } else {
-                setState({ status: { text: 'Connected', className: 'connected' } });
+                const devices = state.devices || { left: false, right: false };
+                const leftConnected = devices.left;
+                const rightConnected = devices.right;
+                
+                if (!leftConnected && !rightConnected) {
+                    setState({ status: { text: 'no joy-con connected', className: 'disconnected' } });
+                } else if (!leftConnected) {
+                    setState({ status: { text: 'left joy-con not connected', className: 'disconnected' } });
+                } else if (!rightConnected) {
+                    setState({ status: { text: 'right joy-con not connected', className: 'disconnected' } });
+                } else {
+                    setState({ status: { text: 'Connected', className: 'connected' } });
+                }
             }
+            return;
         }
+
+        const devices = state.devices || { left: false, right: false };
+        const leftConnected = devices.left;
+        const rightConnected = devices.right;
+        
+        updateFromDevices(service, leftConnected, rightConnected, error);
     },
     
     handleStateChange(state) {
@@ -382,11 +422,21 @@ export const storeActions = {
             });
         }
         
-        storeActions.updateUI({ connected: false, vibrating: false, deviceName: 'Joy-Con', devices: { left: false, right: false }, vibratingSide: null });
+        // Initialize state machine service
+        const state = getInternalState();
+        const service = interpret(joyConMachine)
+            .onTransition((machineState) => {
+                setState({ status: getStatusFromState(machineState, machineState.context) });
+            })
+            .start();
         
+        state.refs.joyConStateService = service;
+        
+        // Set initial state
         if (!navigator.hid) {
-            setState({ status: { text: 'WebHID not supported. Use Chrome/Edge 89+', className: 'error' } });
+            service.send({ type: 'ERROR', message: 'WebHID not supported. Use Chrome/Edge 89+' });
         } else {
+            service.send('DISCONNECT_ALL');
             navigator.hid.addEventListener('disconnect', (event) => {
                 const state = getInternalState();
                 if (state.refs.joyCon) {

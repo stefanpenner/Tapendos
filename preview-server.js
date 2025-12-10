@@ -17,9 +17,21 @@ const server = Bun.serve({
     const file = Bun.file(`./dist${pathname}`);
     if (await file.exists()) {
       const response = new Response(file);
-      // Set correct MIME type for JavaScript modules
-      if (pathname.endsWith('.js') || pathname.endsWith('.mjs')) {
+      // Set correct MIME types
+      if (pathname.endsWith('.html')) {
+        response.headers.set('Content-Type', 'text/html');
+      } else if (pathname.endsWith('.css')) {
+        response.headers.set('Content-Type', 'text/css');
+      } else if (pathname.endsWith('.js') || pathname.endsWith('.mjs')) {
         response.headers.set('Content-Type', 'application/javascript');
+      } else if (pathname.endsWith('.svg')) {
+        response.headers.set('Content-Type', 'image/svg+xml');
+      } else if (pathname.endsWith('.png')) {
+        response.headers.set('Content-Type', 'image/png');
+      } else if (pathname.endsWith('.jpg') || pathname.endsWith('.jpeg')) {
+        response.headers.set('Content-Type', 'image/jpeg');
+      } else if (pathname.endsWith('.webp')) {
+        response.headers.set('Content-Type', 'image/webp');
       }
       return response;
     }

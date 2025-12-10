@@ -6,7 +6,8 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #52367d 0%, #7a5aa0 40%, #6b4a8f 60%, #52367d 100%);
+    background-attachment: fixed;
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -15,7 +16,7 @@ body {
 }
 
 .container {
-    background: white;
+    background: #f7f7f7;
     border-radius: 20px;
     padding: 40px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -24,27 +25,41 @@ body {
     text-align: center;
 }
 
-h1 {
-    color: #333;
+.header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
     margin-bottom: 10px;
+}
+
+.logo {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 5px;
+}
+
+h1 {
+    color: #2a2b2e;
+    margin-bottom: 0;
     font-size: 2em;
 }
 
 .subtitle {
-    color: #666;
+    color: #2a2b2e;
     margin-bottom: 30px;
     font-size: 0.9em;
 }
 
 .subtitle a {
-    color: #667eea;
+    color: #30a7d9;
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s ease;
 }
 
 .subtitle a:hover {
-    color: #764ba2;
+    color: #e85641;
     text-decoration: underline;
 }
 
@@ -57,18 +72,21 @@ h1 {
 }
 
 .status.disconnected {
-    background: #fee;
-    color: #c33;
+    background: rgba(232, 86, 65, 0.2);
+    color: #e85641;
+    border: 2px solid #e85641;
 }
 
 .status.connected {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: rgba(48, 167, 217, 0.2);
+    color: #30a7d9;
+    border: 2px solid #30a7d9;
 }
 
 .status.error {
-    background: #fee;
-    color: #c33;
+    background: rgba(232, 86, 65, 0.2);
+    color: #e85641;
+    border: 2px solid #e85641;
 }
 
 .button-group {
@@ -93,22 +111,22 @@ h1 {
     height: 10px;
     border-radius: 50%;
     margin-right: 10px;
-    background: rgba(255, 255, 255, 0.3);
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    background: rgba(42, 43, 46, 0.3);
+    border: 2px solid rgba(42, 43, 46, 0.5);
     transition: all 0.3s ease;
     flex-shrink: 0;
 }
 
 .status-indicator.connected {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(255, 255, 255, 1);
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    background: #30a7d9;
+    border-color: #30a7d9;
+    box-shadow: 0 0 8px rgba(48, 167, 217, 0.5);
 }
 
 .status-indicator.vibrating {
-    background: #ffeb3b;
-    border-color: #ffc107;
-    box-shadow: 0 0 12px rgba(255, 235, 59, 0.8);
+    background: #e85641;
+    border-color: #e85641;
+    box-shadow: 0 0 12px rgba(232, 86, 65, 0.8);
     animation: pulse 0.5s ease-in-out infinite;
 }
 
@@ -165,37 +183,44 @@ button:disabled {
 }
 
 .connect-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, #30a7d9 0%, #52367d 100%);
+    color: #f7f7f7;
 }
 
 .connect-btn.connected {
-    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    background: linear-gradient(135deg, #30a7d9 0%, #1a9bb8 100%);
 }
 
 .connect-btn.connected:hover:not(:disabled) {
-    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+    background: linear-gradient(135deg, #1a9bb8 0%, #30a7d9 100%);
 }
 
 .vibrate-btn {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
+    background: #ccc;
+    color: #666;
+}
+
+.vibrate-btn.ready {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: #f7f7f7;
 }
 
 .vibrate-btn:disabled {
     background: #ccc;
+    color: #666;
 }
 
 .stop-btn {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-    color: white;
+    background: linear-gradient(135deg, #e85641 0%, #c93d3d 100%);
+    color: #f7f7f7;
 }
 
 .controls {
     margin-bottom: 20px;
     padding: 20px;
-    background: #f9f9f9;
+    background: rgba(82, 54, 125, 0.1);
     border-radius: 10px;
+    border: 2px solid rgba(82, 54, 125, 0.2);
 }
 
 .control-group {
@@ -209,7 +234,7 @@ button:disabled {
 .control-group label {
     display: block;
     margin-bottom: 8px;
-    color: #333;
+    color: #2a2b2e;
     font-weight: 500;
     font-size: 0.9em;
 }
@@ -218,7 +243,7 @@ button:disabled {
     width: 100%;
     height: 6px;
     border-radius: 3px;
-    background: #ddd;
+    background: rgba(42, 43, 46, 0.2);
     outline: none;
     -webkit-appearance: none;
 }
@@ -229,17 +254,18 @@ button:disabled {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #667eea;
+    background: #30a7d9;
     cursor: pointer;
+    border: 2px solid #2a2b2e;
 }
 
 .control-group input[type="range"]::-moz-range-thumb {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #667eea;
+    background: #30a7d9;
     cursor: pointer;
-    border: none;
+    border: 2px solid #2a2b2e;
 }
 
 .control-group input[type="range"]:disabled {
@@ -273,44 +299,44 @@ button:disabled {
 .control-group select {
     width: 100%;
     padding: 10px;
-    border: 2px solid #ddd;
+    border: 2px solid #2a2b2e;
     border-radius: 8px;
-    background: white;
+    background: #f7f7f7;
     font-size: 0.95em;
-    color: #333;
+    color: #2a2b2e;
     cursor: pointer;
     transition: border-color 0.3s ease;
     outline: none;
 }
 
 .control-group select:hover {
-    border-color: #667eea;
+    border-color: #30a7d9;
 }
 
 .control-group select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #30a7d9;
+    box-shadow: 0 0 0 3px rgba(48, 167, 217, 0.2);
 }
 
 .control-group input[type="number"] {
     width: 100%;
     padding: 10px;
-    border: 2px solid #ddd;
+    border: 2px solid #2a2b2e;
     border-radius: 8px;
-    background: white;
+    background: #f7f7f7;
     font-size: 0.95em;
-    color: #333;
+    color: #2a2b2e;
     transition: border-color 0.3s ease;
     outline: none;
 }
 
 .control-group input[type="number"]:hover {
-    border-color: #667eea;
+    border-color: #30a7d9;
 }
 
 .control-group input[type="number"]:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #30a7d9;
+    box-shadow: 0 0 0 3px rgba(48, 167, 217, 0.2);
 }
 
 .control-group input[type="checkbox"] {
@@ -325,7 +351,7 @@ button:disabled {
 }
 
 .control-group label span {
-    color: #667eea;
+    color: #30a7d9;
     font-weight: 600;
 }
 
@@ -339,22 +365,22 @@ button:disabled {
 .preset-hint {
     font-size: 0.75em;
     font-weight: 400;
-    color: #777;
+    color: #2a2b2e;
 }
 
 .preset-citation {
     margin-top: 8px;
     padding: 8px 12px;
-    background: #eef2ff;
+    background: rgba(48, 167, 217, 0.1);
     border-radius: 6px;
     font-size: 0.8em;
-    color: #334;
+    color: #2a2b2e;
     line-height: 1.4;
     text-align: left;
 }
 
 .preset-citation a {
-    color: #667eea;
+    color: #30a7d9;
     text-decoration: none;
 }
 
@@ -363,14 +389,14 @@ button:disabled {
 }
 
 .control-group select.preset-active {
-    border-color: #4caf50;
-    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    border-color: #30a7d9;
+    box-shadow: 0 0 0 3px rgba(48, 167, 217, 0.2);
 }
 
 .info {
     margin-top: 30px;
     font-size: 0.9em;
-    color: #666;
+    color: #2a2b2e;
     text-align: left;
 }
 
@@ -378,7 +404,7 @@ button:disabled {
     background: none;
     border: none;
     padding: 0;
-    color: #667eea;
+    color: #30a7d9;
     font-size: 0.9em;
     cursor: pointer;
     text-align: left;
@@ -393,7 +419,7 @@ button:disabled {
 }
 
 .info-toggle:hover {
-    color: #764ba2;
+    color: #e85641;
     transform: none;
     box-shadow: none;
 }
@@ -405,7 +431,7 @@ button:disabled {
 .info-content {
     margin-top: 12px;
     padding: 15px;
-    background: #f5f5f5;
+    background: rgba(82, 54, 125, 0.1);
     border-radius: 10px;
     line-height: 1.7;
     animation: slideDown 0.2s ease-out;
@@ -424,11 +450,11 @@ button:disabled {
 
 .info-content p {
     margin-bottom: 12px;
-    color: #666;
+    color: #2a2b2e;
 }
 
 .info strong {
-    color: #333;
+    color: #2a2b2e;
     display: block;
     margin-bottom: 12px;
     font-size: 1.05em;
@@ -457,14 +483,14 @@ button:disabled {
 }
 
 .pairing-list a {
-    color: #667eea;
+    color: #30a7d9;
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s ease;
 }
 
 .pairing-list a:hover {
-    color: #764ba2;
+    color: #e85641;
     text-decoration: underline;
 }
 
@@ -489,9 +515,9 @@ button:disabled {
 .session-section {
     margin-bottom: 20px;
     padding: 20px;
-    background: #f0f4ff;
+    background: rgba(48, 167, 217, 0.1);
     border-radius: 10px;
-    border: 2px solid #667eea;
+    border: 2px solid #30a7d9;
 }
 
 .role-badge {
@@ -508,7 +534,7 @@ button:disabled {
 
 .session-status {
     font-weight: 500;
-    color: #333;
+    color: #2a2b2e;
     margin-bottom: 15px;
     font-size: 0.95em;
 }
@@ -520,7 +546,7 @@ button:disabled {
 .session-link-container label {
     display: block;
     margin-bottom: 8px;
-    color: #333;
+    color: #2a2b2e;
     font-weight: 500;
     font-size: 0.9em;
 }
@@ -534,20 +560,20 @@ button:disabled {
 .session-link-input {
     flex: 1;
     padding: 10px 12px;
-    border: 2px solid #ddd;
+    border: 2px solid #2a2b2e;
     border-radius: 8px;
-    background: white;
+    background: #f7f7f7;
     font-size: 0.85em;
     font-family: monospace;
-    color: #333;
+    color: #2a2b2e;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .session-link-input:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #30a7d9;
+    box-shadow: 0 0 0 3px rgba(48, 167, 217, 0.2);
 }
 
 .copy-link-btn {
@@ -555,8 +581,8 @@ button:disabled {
     font-size: 0.9em;
     border: none;
     border-radius: 8px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, #30a7d9 0%, #52367d 100%);
+    color: #f7f7f7;
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 600;
@@ -567,11 +593,11 @@ button:disabled {
 
 .copy-link-btn:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 5px 15px rgba(48, 167, 217, 0.3);
 }
 
 .copy-link-btn.copied {
-    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    background: linear-gradient(135deg, #30a7d9 0%, #1a9bb8 100%);
 }
 
 .answer-input-hint {
@@ -591,18 +617,18 @@ button:disabled {
 }
 
 .session-link-input:not([readonly]):focus {
-    border-color: #4caf50;
-    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    border-color: #30a7d9;
+    box-shadow: 0 0 0 3px rgba(48, 167, 217, 0.2);
 }
 
 .session-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, #30a7d9 0%, #52367d 100%);
+    color: #f7f7f7;
     margin-bottom: 15px;
 }
 
 .session-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #5568d3 0%, #653a8f 100%);
+    background: linear-gradient(135deg, #1a9bb8 0%, #4a2d6b 100%);
 }
 
 .session-btn:disabled {
@@ -628,9 +654,9 @@ button:disabled {
     min-width: 180px;
     max-width: 220px;
     padding: 25px 20px;
-    border: 2px solid #ddd;
+    border: 2px solid #2a2b2e;
     border-radius: 10px;
-    background: white;
+    background: #f7f7f7;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -643,17 +669,17 @@ button:disabled {
 .mode-btn:hover:not(.coming-soon) {
     transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    border-color: #667eea;
+    border-color: #30a7d9;
 }
 
 .mode-btn.multiplayer:hover:not(.coming-soon) {
-    border-color: #667eea;
-    background: linear-gradient(135deg, #f0f4ff 0%, #e8eaff 100%);
+    border-color: #30a7d9;
+    background: linear-gradient(135deg, rgba(48, 167, 217, 0.1) 0%, rgba(82, 54, 125, 0.1) 100%);
 }
 
 .mode-btn.singleplayer:hover {
-    border-color: #4caf50;
-    background: linear-gradient(135deg, #f1f8f4 0%, #e8f5e9 100%);
+    border-color: #30a7d9;
+    background: linear-gradient(135deg, rgba(48, 167, 217, 0.1) 0%, rgba(232, 86, 65, 0.1) 100%);
 }
 
 .mode-icon {
@@ -664,7 +690,7 @@ button:disabled {
 .mode-title {
     font-size: 1em;
     font-weight: 600;
-    color: #333;
+    color: #2a2b2e;
     letter-spacing: 0.5px;
 }
 
@@ -673,7 +699,7 @@ button:disabled {
     margin-top: 8px;
     font-size: 0.75em;
     font-weight: 600;
-    color: #667eea;
+    color: #30a7d9;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -685,20 +711,20 @@ button:disabled {
 .coming-soon-message {
     text-align: center;
     padding: 40px 20px;
-    background: linear-gradient(135deg, #f0f4ff 0%, #e8eaff 100%);
+    background: linear-gradient(135deg, rgba(48, 167, 217, 0.1) 0%, rgba(82, 54, 125, 0.1) 100%);
     border-radius: 15px;
-    border: 2px solid #667eea;
+    border: 2px solid #30a7d9;
     margin-bottom: 20px;
 }
 
 .coming-soon-message h2 {
-    color: #333;
+    color: #2a2b2e;
     margin-bottom: 15px;
     font-size: 1.8em;
 }
 
 .coming-soon-message p {
-    color: #666;
+    color: #2a2b2e;
     margin-bottom: 25px;
     font-size: 1em;
     line-height: 1.6;
@@ -707,8 +733,8 @@ button:disabled {
 .back-to-home-btn {
     display: inline-block;
     padding: 12px 24px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, #30a7d9 0%, #52367d 100%);
+    color: #f7f7f7;
     text-decoration: none;
     border-radius: 8px;
     font-weight: 600;
@@ -717,24 +743,24 @@ button:disabled {
 
 .back-to-home-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 5px 15px rgba(48, 167, 217, 0.3);
 }
 
 .role-badge.multiplayer {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, #30a7d9 0%, #52367d 100%);
+    color: #f7f7f7;
 }
 
 .role-badge.singleplayer {
-    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-    color: white;
+    background: linear-gradient(135deg, #30a7d9 0%, #e85641 100%);
+    color: #f7f7f7;
 }
 
 /* Player 2 Controller Status (for Player 1 view) */
 .player2-controllers {
     margin-top: 15px;
     padding: 15px;
-    background: #f9f9f9;
+    background: rgba(82, 54, 125, 0.1);
     border-radius: 10px;
 }
 
@@ -749,9 +775,9 @@ button:disabled {
     align-items: center;
     gap: 12px;
     padding: 10px;
-    background: white;
+    background: #f7f7f7;
     border-radius: 8px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #2a2b2e;
 }
 
 .player2-controller-item .status-indicator {
@@ -761,13 +787,13 @@ button:disabled {
 .controller-label {
     flex: 1;
     font-weight: 500;
-    color: #333;
+    color: #2a2b2e;
     font-size: 0.95em;
 }
 
 .controller-status-text {
     font-size: 0.85em;
-    color: #666;
+    color: #2a2b2e;
     font-weight: 500;
 }
 
@@ -775,20 +801,20 @@ button:disabled {
 .player2-welcome {
     margin-bottom: 25px;
     padding: 25px;
-    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%);
+    background: linear-gradient(135deg, rgba(48, 167, 217, 0.1) 0%, rgba(232, 86, 65, 0.1) 100%);
     border-radius: 15px;
-    border: 2px solid #4caf50;
+    border: 2px solid #30a7d9;
     text-align: center;
 }
 
 .player2-welcome h2 {
-    color: #2e7d32;
+    color: #30a7d9;
     margin-bottom: 12px;
     font-size: 1.5em;
 }
 
 .player2-welcome p {
-    color: #333;
+    color: #2a2b2e;
     margin-bottom: 10px;
     font-size: 1em;
     line-height: 1.6;
@@ -800,7 +826,7 @@ button:disabled {
 
 .player2-instruction {
     font-size: 0.9em;
-    color: #666;
+    color: #2a2b2e;
     font-style: italic;
 }
 
@@ -928,13 +954,13 @@ button:disabled {
 .pairing-section {
     margin-bottom: 20px;
     padding: 30px;
-    background: linear-gradient(135deg, #f0f4ff 0%, #e8eaff 100%);
+    background: linear-gradient(135deg, rgba(48, 167, 217, 0.1) 0%, rgba(82, 54, 125, 0.1) 100%);
     border-radius: 15px;
-    border: 2px solid #667eea;
+    border: 2px solid #30a7d9;
 }
 
 .pairing-flow h2 {
-    color: #333;
+    color: #2a2b2e;
     margin-bottom: 25px;
     font-size: 1.5em;
     text-align: center;
@@ -956,8 +982,8 @@ button:disabled {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, #30a7d9 0%, #52367d 100%);
+    color: #f7f7f7;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -971,7 +997,7 @@ button:disabled {
 
 .step-title {
     font-weight: 600;
-    color: #333;
+    color: #2a2b2e;
     margin-bottom: 12px;
     font-size: 1em;
 }
@@ -979,7 +1005,7 @@ button:disabled {
 .step-hint {
     margin-top: 8px;
     font-size: 0.85em;
-    color: #666;
+    color: #2a2b2e;
     font-style: italic;
 }
 

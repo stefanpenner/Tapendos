@@ -2,11 +2,12 @@
  * Status display component
  */
 
-import { useStore } from '../store.mjs';
+import { useApp, getStatus } from '../hooks/useApp.mjs';
 
 export function createStatusDisplay(html) {
     return function StatusDisplay() {
-        const status = useStore(state => state.status) || { text: 'Loading...', className: 'disconnected' };
+        const [state] = useApp();
+        const status = getStatus(state);
         return html`
             <div id="status" class="status ${status.className || 'disconnected'}">
                 ${status.text || 'Loading...'}

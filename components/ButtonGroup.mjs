@@ -2,18 +2,29 @@
  * Button group component - connect buttons and vibrate button
  */
 
-import { useStore } from '../store.mjs';
+import { useApp, getConnectionState, getVibrationState } from '../hooks/useApp.mjs';
 
 export function createButtonGroup(html) {
     return function ButtonGroup() {
-        const leftConnected = useStore(state => state.leftConnected);
-        const rightConnected = useStore(state => state.rightConnected);
-        const leftVibrating = useStore(state => state.leftVibrating);
-        const rightVibrating = useStore(state => state.rightVibrating);
-        const isVibrating = useStore(state => state.isVibrating);
-        const connectLeft = useStore(state => state.connectLeft);
-        const connectRight = useStore(state => state.connectRight);
-        const vibrate = useStore(state => state.vibrate);
+        const [state, send] = useApp();
+        const connection = getConnectionState(state);
+        const vibration = getVibrationState(state);
+        
+        const leftConnected = connection.leftConnected;
+        const rightConnected = connection.rightConnected;
+        const leftVibrating = vibration.leftVibrating;
+        const rightVibrating = vibration.rightVibrating;
+        const isVibrating = vibration.isVibrating;
+        
+        const connectLeft = () => send({ type: 'connectLeftAction' });
+        const connectRight = () => send({ type: 'connectRightAction' });
+        const vibrate = () => {
+            if (isVibrating) {
+                send({ type: 'stopVibration' });
+            } else {
+                send({ type: 'startVibration' });
+            }
+        };
 
         return html`
         <div class="button-group">
@@ -37,7 +48,7 @@ export function createButtonGroup(html) {
             </div>
             <button 
                 id="vibrateBtn" 
-                class=${isVibrating ? 'stop-btn' : 'vibrate-btn'} 
+                class=${isVibrating ? 'stop-btn' : leftConnected && rightConnected ? 'vibrate-btn ready' : 'vibrate-btn'} 
                 disabled=${!(leftConnected && rightConnected)}
                 onClick=${vibrate}
             >

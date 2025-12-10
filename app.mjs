@@ -3,7 +3,9 @@
  */
 
 import { useEffect } from 'preact/hooks';
-import { useStore } from './store.mjs';
+import { useApp } from './hooks/useApp.mjs';
+import * as presetManager from './preset-manager.mjs';
+import { refs } from './refs.mjs';
 import { createHeader } from './components/Header.mjs';
 import { createStatusDisplay } from './components/StatusDisplay.mjs';
 import { createControls } from './components/Controls.mjs';
@@ -18,11 +20,30 @@ export function createApp(html) {
     const InfoSection = createInfoSection(html);
     
     return function App() {
-        const initialize = useStore(state => state.initialize);
+        const [state, send] = useApp();
         
         useEffect(() => {
-            initialize();
-        }, [initialize]);
+            // Initialize presets
+            const presetOptions = presetManager.populatePresetOptions();
+            send({ type: 'loadPresets', presetOptions });
+            
+            const storedPresetId = presetManager.loadStoredPreset();
+            if (storedPresetId && presetManager.findPreset(storedPresetId)) {
+                send({ type: 'applyPreset', presetId: storedPresetId, persist: false });
+            }
+            
+            // Set initial connection state
+            if (!navigator.hid) {
+                send({ type: 'error', error: 'WebHID not supported. Use Chrome/Edge 89+' });
+            } else {
+                send({ type: 'disconnectAll' });
+                navigator.hid.addEventListener('disconnect', (event) => {
+                    if (refs.joyCon) {
+                        refs.joyCon.handleDisconnect(event.device);
+                    }
+                });
+            }
+        }, []);
         
         return html`
             <div class="container">

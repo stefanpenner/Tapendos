@@ -4,32 +4,33 @@
 
 import * as vibration from '../vibration-controller.mjs';
 import * as presetManager from '../preset-manager.mjs';
-import { useStore } from '../store.mjs';
+import { useApp, getSettings, getPresets } from '../hooks/useApp.mjs';
+import { refs } from '../refs.mjs';
 
 export function createControls(html) {
     return function Controls() {
-        const lengthValue = useStore(state => state.lengthValue);
-        const intensityValue = useStore(state => state.intensityValue);
-        const pauseValue = useStore(state => state.pauseValue);
-        const repeatMode = useStore(state => state.repeatMode);
-        const repeatCount = useStore(state => state.repeatCount);
-        const repeatCountDisplay = useStore(state => state.repeatCountDisplay);
-        const showRepeatCount = useStore(state => state.showRepeatCount);
-        const presetOptions = useStore(state => state.presetOptions);
-        const selectedPreset = useStore(state => state.selectedPreset);
-        const presetActive = useStore(state => state.presetActive);
-        const refs = useStore(state => state.refs);
-        const setLengthValue = useStore(state => state.setLengthValue);
-        const setIntensityValue = useStore(state => state.setIntensityValue);
-        const setPauseValue = useStore(state => state.setPauseValue);
-        const setRepeatMode = useStore(state => state.setRepeatMode);
-        const setShowRepeatCount = useStore(state => state.setShowRepeatCount);
-        const setRepeatCount = useStore(state => state.setRepeatCount);
-        const setRepeatCountDisplay = useStore(state => state.setRepeatCountDisplay);
-        const setPresetActive = useStore(state => state.setPresetActive);
-        const applyPreset = useStore(state => state.applyPreset);
-        const handleManualPresetOverride = useStore(state => state.handleManualPresetOverride);
-        const applyLiveConfig = useStore(state => state.applyLiveConfig);
+        const [state, send] = useApp();
+        const settings = getSettings(state);
+        const presets = getPresets(state);
+        
+        const lengthValue = settings.lengthValue;
+        const intensityValue = settings.intensityValue;
+        const pauseValue = settings.pauseValue;
+        const repeatMode = settings.repeatMode;
+        const repeatCount = settings.repeatCount;
+        const repeatCountDisplay = settings.repeatCountDisplay;
+        const showRepeatCount = settings.showRepeatCount;
+        const presetOptions = presets.presetOptions;
+        const selectedPreset = presets.selectedPreset;
+        const presetActive = presets.presetActive;
+        
+        const setLengthValue = (val) => send({ type: 'setLength', value: parseInt(val, 10) });
+        const setIntensityValue = (val) => send({ type: 'setIntensity', value: parseFloat(val) });
+        const setPauseValue = (val) => send({ type: 'setPause', value: parseInt(val, 10) });
+        const setRepeatMode = (val) => send({ type: 'setRepeatMode', value: val });
+        const setRepeatCount = (val) => send({ type: 'setRepeatCount', value: val });
+        const setRepeatCountDisplay = (val) => send({ type: 'setRepeatCountDisplay', value: val });
+        const applyPreset = (presetId) => send({ type: 'applyPreset', presetId, persist: true });
 
     return html`
         <div class="controls">
@@ -44,16 +45,19 @@ export function createControls(html) {
                         const selectedId = e.target.value;
                         if (selectedId === presetManager.CUSTOM_PRESET_ID) {
                             refs.activePresetId.current = presetManager.CUSTOM_PRESET_ID;
-                            setPresetActive(false);
+                            send({ type: 'setPresetActive', value: false });
                             presetManager.persistPresetSelection(presetManager.CUSTOM_PRESET_ID);
+                            send({ type: 'manualOverride' });
                         } else {
                             applyPreset(selectedId);
                         }
                     }}
                 >
-                    ${presetOptions.map(opt => html`
+                    ${presetOptions && presetOptions.length > 0 ? presetOptions.map(opt => html`
                         <option value=${opt.value}>${opt.text}</option>
-                    `)}
+                    `) : html`
+                        <option value=${presetManager.CUSTOM_PRESET_ID}>Custom</option>
+                    `}
                 </select>
             </div>
             <div class="control-group">
@@ -69,7 +73,7 @@ export function createControls(html) {
                     value=${lengthValue} 
                     step="10"
                     onInput=${(e) => {
-                        const val = e.target.value;
+                        const val = parseInt(e.target.value, 10);
                         setLengthValue(val);
                     }}
                 />
@@ -107,7 +111,7 @@ export function createControls(html) {
                     value=${pauseValue} 
                     step="50"
                     onInput=${(e) => {
-                        const val = e.target.value;
+                        const val = parseInt(e.target.value, 10);
                         setPauseValue(val);
                     }}
                 />
