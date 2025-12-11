@@ -7,34 +7,32 @@ import * as presetManager from '../preset-manager.mjs';
 import { useApp, getSettings, getPresets } from '../hooks/useApp.mjs';
 import { refs } from '../refs.mjs';
 
-export function createControls(html) {
-    return function Controls() {
-        const [state, send] = useApp();
-        const settings = getSettings(state);
-        const presets = getPresets(state);
-        
-        const lengthValue = settings.lengthValue;
-        const intensityValue = settings.intensityValue;
-        const pauseValue = settings.pauseValue;
-        const repeatMode = settings.repeatMode;
-        const repeatCount = settings.repeatCount;
-        const repeatCountDisplay = settings.repeatCountDisplay;
-        const showRepeatCount = settings.showRepeatCount;
-        const presetOptions = presets.presetOptions;
-        const selectedPreset = presets.selectedPreset;
-        const presetActive = presets.presetActive;
-        const showAdvancedControls = state.context?.showAdvancedControls ?? false;
-        const isCustomPreset = selectedPreset === presetManager.CUSTOM_PRESET_ID;
-        const shouldShowSliders = showAdvancedControls || isCustomPreset;
-        
-        const setLengthValue = (val) => send({ type: 'setLength', value: parseInt(val, 10) });
-        const setIntensityValue = (val) => send({ type: 'setIntensity', value: parseFloat(val) });
-        const setPauseValue = (val) => send({ type: 'setPause', value: parseInt(val, 10) });
-        const setRepeatMode = (val) => send({ type: 'setRepeatMode', value: val });
-        const setRepeatCount = (val) => send({ type: 'setRepeatCount', value: val });
-        const setRepeatCountDisplay = (val) => send({ type: 'setRepeatCountDisplay', value: val });
-        const applyPreset = (presetId) => send({ type: 'applyPreset', presetId, persist: true });
-        const toggleAdvanced = () => send({ type: 'toggleAdvancedControls' });
+/**
+ * Pure controls function - takes html, settings, presets, showAdvancedControls, and send function as parameters
+ * Used for testing and when you want to control the component directly
+ */
+export function Controls({ html, settings, presets, showAdvancedControls, send }) {
+    const lengthValue = settings.lengthValue;
+    const intensityValue = settings.intensityValue;
+    const pauseValue = settings.pauseValue;
+    const repeatMode = settings.repeatMode;
+    const repeatCount = settings.repeatCount;
+    const repeatCountDisplay = settings.repeatCountDisplay;
+    const showRepeatCount = settings.showRepeatCount;
+    const presetOptions = presets.presetOptions;
+    const selectedPreset = presets.selectedPreset;
+    const presetActive = presets.presetActive;
+    const isCustomPreset = selectedPreset === presetManager.CUSTOM_PRESET_ID;
+    const shouldShowSliders = showAdvancedControls || isCustomPreset;
+
+    const setLengthValue = (val) => send({ type: 'setLength', value: parseInt(val, 10) });
+    const setIntensityValue = (val) => send({ type: 'setIntensity', value: parseFloat(val) });
+    const setPauseValue = (val) => send({ type: 'setPause', value: parseInt(val, 10) });
+    const setRepeatMode = (val) => send({ type: 'setRepeatMode', value: val });
+    const setRepeatCount = (val) => send({ type: 'setRepeatCount', value: val });
+    const setRepeatCountDisplay = (val) => send({ type: 'setRepeatCountDisplay', value: val });
+    const applyPreset = (presetId) => send({ type: 'applyPreset', presetId, persist: true });
+    const toggleAdvanced = () => send({ type: 'toggleAdvancedControls' });
 
     return html`
         <div class="controls">
@@ -179,6 +177,19 @@ export function createControls(html) {
             </div>
         </div>
     `;
+}
+
+/**
+ * Hook-based controls component - uses useApp to get state from state machine
+ * Used in production
+ */
+export function createControls(html) {
+    return function ControlsHook() {
+        const [state, send] = useApp();
+        const settings = getSettings(state);
+        const presets = getPresets(state);
+        const showAdvancedControls = state.context?.showAdvancedControls ?? false;
+        return Controls({ html, settings, presets, showAdvancedControls, send });
     };
 }
 

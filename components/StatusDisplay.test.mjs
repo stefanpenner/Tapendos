@@ -5,12 +5,10 @@
 import { test, expect, describe, beforeEach } from 'bun:test';
 import { h, render } from 'preact';
 import htm from 'htm';
-import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import { StatusDisplay } from './StatusDisplay.mjs';
 import { getStatus } from '../hooks/useApp.mjs';
 
-// Set up DOM environment
-GlobalRegistrator.register();
+// DOM environment is set up globally in setup.test.mjs
 
 // Create real HTML template tag
 const html = htm.bind(h);

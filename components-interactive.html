@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Component Gallery - Tapendos</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .component-gallery {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .component-section {
+            margin-bottom: 40px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+
+        .component-header {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007acc;
+        }
+
+        .component-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+            color: #007acc;
+        }
+
+        .component-description {
+            color: #666;
+            margin: 5px 0 0 0;
+            font-size: 14px;
+        }
+
+        .component-demo {
+            background: white;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .component-controls {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f8ff;
+            border-radius: 4px;
+        }
+
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .control-group input, .control-group select, .control-group button {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .control-group button {
+            background: #007acc;
+            color: white;
+            cursor: pointer;
+        }
+
+        .control-group button:hover {
+            background: #005999;
+        }
+
+        .status-variants {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .status-variant {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .status-variant:hover {
+            background: #f0f0f0;
+        }
+
+        .status-variant.active {
+            background: #007acc;
+            color: white;
+            border-color: #007acc;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .connect-btn {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .connect-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .connect-btn.connected {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        .vibrate-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .vibrate-btn.ready {
+            background: #007acc;
+            color: white;
+            cursor: pointer;
+        }
+
+        .stop-btn {
+            background: #f44336 !important;
+            color: white !important;
+            cursor: pointer !important;
+        }
+
+        .info-toggle {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .info-content {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="component-gallery">
+        <h1>Interactive Component Gallery</h1>
+        <p>This page shows components with real functionality for testing and development.</p>
+
+        <!-- Status Display Component -->
+        <div class="component-section">
+            <div class="component-header">
+                <h2 class="component-title">StatusDisplay</h2>
+                <p class="component-description">Shows connection status and messages</p>
+            </div>
+            <div class="component-demo">
+                <div id="status-display" class="status disconnected">Loading...</div>
+            </div>
+            <div class="component-controls">
+                <div class="control-group">
+                    <label>Status Variants:</label>
+                    <div class="status-variants">
+                        <div class="status-variant active" data-status="loading">Loading</div>
+                        <div class="status-variant" data-status="connected">Connected</div>
+                        <div class="status-variant" data-status="connecting">Connecting</div>
+                        <div class="status-variant" data-status="error">Error</div>
+                        <div class="status-variant" data-status="disconnected">Disconnected</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Button Group Component -->
+        <div class="component-section">
+            <div class="component-header">
+                <h2 class="component-title">ButtonGroup</h2>
+                <p class="component-description">Connection buttons and vibration controls</p>
+            </div>
+            <div class="component-demo">
+                <div class="button-group">
+                    <div class="controller-buttons-container">
+                        <button class="connect-btn connect-btn-left" id="connect-left">Connect Left</button>
+                        <button class="vibrate-btn" id="vibrate-btn" disabled>Vibrate</button>
+                        <button class="connect-btn connect-btn-right" id="connect-right">Connect Right</button>
+                    </div>
+                </div>
+            </div>
+            <div class="component-controls">
+                <div class="control-group">
+                    <label>Connection State:</label>
+                    <button id="toggle-left">Toggle Left Connection</button>
+                    <button id="toggle-right">Toggle Right Connection</button>
+                </div>
+                <div class="control-group">
+                    <label>Vibration:</label>
+                    <button id="toggle-vibration">Start/Stop Vibration</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Section Component -->
+        <div class="component-section">
+            <div class="component-header">
+                <h2 class="component-title">InfoSection</h2>
+                <p class="component-description">Help and connection instructions</p>
+            </div>
+            <div class="component-demo">
+                <div class="info">
+                    <button class="info-toggle" id="info-toggle" aria-expanded="false">▶ Need help connecting your Joy-Cons?</button>
+                    <div class="info-content" id="info-content" style="display: none;">
+                        <ul class="pairing-list">
+                            <li><strong>macOS:</strong> Sync button → System Settings > Bluetooth</li>
+                            <li><strong>Windows:</strong> Sync button → Settings > Devices > Bluetooth</li>
+                            <li><strong>iOS:</strong> Not supported</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="component-controls">
+                <div class="control-group">
+                    <button id="toggle-info">Toggle Info Panel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Component -->
+        <div class="component-section">
+            <div class="component-header">
+                <h2 class="component-title">Controls</h2>
+                <p class="component-description">Preset selection and vibration settings</p>
+            </div>
+            <div class="component-demo">
+                <div class="controls">
+                    <div class="control-group preset-select-group">
+                        <label for="presetSelect">Presets</label>
+                        <select id="presetSelect">
+                            <option value="standard-processing">Standard Processing</option>
+                            <option value="gentle">Gentle</option>
+                            <option value="intense">Intense</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <button class="toggle-advanced-btn" id="toggle-advanced">▶ Show Advanced Settings</button>
+                    <div class="advanced-controls" id="advanced-controls" style="display: none;">
+                        <div class="control-group">
+                            <label for="lengthSlider">Pulse Length: <span id="lengthValue">500</span>ms</label>
+                            <input type="range" id="lengthSlider" min="10" max="2000" value="500" step="10">
+                        </div>
+                        <div class="control-group">
+                            <label for="intensitySlider">Intensity: <span id="intensityValue">80%</span></label>
+                            <input type="range" id="intensitySlider" min="0" max="1" value="0.8" step="0.05">
+                        </div>
+                        <div class="control-group">
+                            <label for="pauseSlider">Pause: <span id="pauseValue">1000</span>ms</label>
+                            <input type="range" id="pauseSlider" min="0" max="3000" value="1000" step="50">
+                        </div>
+                        <div class="control-group repeat-mode-group">
+                            <div class="repeat-mode-wrapper">
+                                <label for="repeatModeSelect">Repeat Mode:</label>
+                                <select id="repeatModeSelect" id="repeatModeSelect">
+                                    <option value="unlimited">Unlimited</option>
+                                    <option value="count">Count</option>
+                                </select>
+                            </div>
+                            <div id="repeatCountGroup" class="repeat-count-wrapper" style="display: none;">
+                                <label for="repeatCountInput">Repeat Count: <span id="repeatCountValue">5</span></label>
+                                <input type="number" id="repeatCountInput" min="1" value="5" step="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header Component -->
+        <div class="component-section">
+            <div class="component-header">
+                <h2 class="component-title">Header</h2>
+                <p class="component-description">App title and branding</p>
+            </div>
+            <div class="component-demo">
+                <header>
+                    <div class="header-content">
+                        <img src="./image.png" alt="EMDR Logo" class="logo" />
+                        <h1>Tapendos</h1>
+                    </div>
+                    <p class="subtitle">
+                        Alternating Joy-Con vibration for
+                        <a href="https://en.wikipedia.org/wiki/Eye_movement_desensitization_and_reprocessing"
+                           target="_blank"
+                           rel="noopener noreferrer">EMDR</a>
+                    </p>
+                </header>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Status Display Controls
+        const statusDisplay = document.getElementById('status-display');
+        const statusVariants = document.querySelectorAll('.status-variant');
+
+        const statusConfigs = {
+            loading: { text: 'Loading...', className: 'disconnected' },
+            connected: { text: 'Connected', className: 'connected' },
+            connecting: { text: 'Connecting...', className: 'connecting' },
+            error: { text: 'Connection failed', className: 'error' },
+            disconnected: { text: 'Disconnected', className: 'disconnected' }
+        };
+
+        statusVariants.forEach(variant => {
+            variant.addEventListener('click', () => {
+                const status = variant.dataset.status;
+                const config = statusConfigs[status];
+
+                statusDisplay.textContent = config.text;
+                statusDisplay.className = `status ${config.className}`;
+
+                statusVariants.forEach(v => v.classList.remove('active'));
+                variant.classList.add('active');
+            });
+        });
+
+        // Button Group Controls
+        let leftConnected = false;
+        let rightConnected = false;
+        let isVibrating = false;
+
+        const connectLeftBtn = document.getElementById('connect-left');
+        const connectRightBtn = document.getElementById('connect-right');
+        const vibrateBtn = document.getElementById('vibrate-btn');
+        const toggleLeftBtn = document.getElementById('toggle-left');
+        const toggleRightBtn = document.getElementById('toggle-right');
+        const toggleVibrationBtn = document.getElementById('toggle-vibration');
+
+        function updateButtonGroup() {
+            connectLeftBtn.textContent = leftConnected ? 'Left' : 'Connect Left';
+            connectLeftBtn.classList.toggle('connected', leftConnected);
+
+            connectRightBtn.textContent = rightConnected ? 'Right' : 'Connect Right';
+            connectRightBtn.classList.toggle('connected', rightConnected);
+
+            const canVibrate = leftConnected && rightConnected;
+            vibrateBtn.disabled = !canVibrate;
+            vibrateBtn.className = isVibrating ? 'stop-btn' : (canVibrate ? 'vibrate-btn ready' : 'vibrate-btn');
+            vibrateBtn.textContent = isVibrating ? 'Stop' : 'Vibrate';
+
+            connectLeftBtn.disabled = isVibrating;
+            connectRightBtn.disabled = isVibrating;
+        }
+
+        toggleLeftBtn.addEventListener('click', () => {
+            leftConnected = !leftConnected;
+            updateButtonGroup();
+        });
+
+        toggleRightBtn.addEventListener('click', () => {
+            rightConnected = !rightConnected;
+            updateButtonGroup();
+        });
+
+        toggleVibrationBtn.addEventListener('click', () => {
+            if (leftConnected && rightConnected) {
+                isVibrating = !isVibrating;
+                updateButtonGroup();
+            }
+        });
+
+        // Info Section Controls
+        const infoToggle = document.getElementById('info-toggle');
+        const infoContent = document.getElementById('info-content');
+        const toggleInfoBtn = document.getElementById('toggle-info');
+
+        let infoExpanded = false;
+
+        function updateInfoSection() {
+            infoExpanded = !infoExpanded;
+            infoToggle.setAttribute('aria-expanded', infoExpanded);
+            infoToggle.textContent = (infoExpanded ? '▼' : '▶') + ' Need help connecting your Joy-Cons?';
+            infoContent.style.display = infoExpanded ? 'block' : 'none';
+        }
+
+        toggleInfoBtn.addEventListener('click', updateInfoSection);
+        infoToggle.addEventListener('click', updateInfoSection);
+
+        // Controls Component
+        const toggleAdvancedBtn = document.getElementById('toggle-advanced');
+        const advancedControls = document.getElementById('advanced-controls');
+        const repeatModeSelect = document.getElementById('repeatModeSelect');
+        const repeatCountGroup = document.getElementById('repeatCountGroup');
+
+        let showAdvanced = false;
+
+        toggleAdvancedBtn.addEventListener('click', () => {
+            showAdvanced = !showAdvanced;
+            toggleAdvancedBtn.textContent = (showAdvanced ? '▼' : '▶') + ' ' + (showAdvanced ? 'Hide' : 'Show') + ' Advanced Settings';
+            advancedControls.style.display = showAdvanced ? 'block' : 'none';
+        });
+
+        repeatModeSelect.addEventListener('change', () => {
+            const mode = repeatModeSelect.value;
+            repeatCountGroup.style.display = mode === 'count' ? 'block' : 'none';
+        });
+
+        // Update slider values in real-time
+        document.getElementById('lengthSlider').addEventListener('input', (e) => {
+            document.getElementById('lengthValue').textContent = e.target.value;
+        });
+
+        document.getElementById('intensitySlider').addEventListener('input', (e) => {
+            const value = Math.round(parseFloat(e.target.value) * 100);
+            document.getElementById('intensityValue').textContent = value + '%';
+        });
+
+        document.getElementById('pauseSlider').addEventListener('input', (e) => {
+            document.getElementById('pauseValue').textContent = e.target.value;
+        });
+
+        document.getElementById('repeatCountInput').addEventListener('input', (e) => {
+            document.getElementById('repeatCountValue').textContent = e.target.value;
+        });
+    </script>
+</body>
+</html>

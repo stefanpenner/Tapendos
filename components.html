@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Component Gallery - Tapendos</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .component-gallery {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .component-section {
+            margin-bottom: 40px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+
+        .component-header {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007acc;
+        }
+
+        .component-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+            color: #007acc;
+        }
+
+        .component-description {
+            color: #666;
+            margin: 5px 0 0 0;
+            font-size: 14px;
+        }
+
+        .component-demo {
+            background: white;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .component-variants {
+            margin-top: 15px;
+        }
+
+        .variant {
+            margin-bottom: 20px;
+        }
+
+        .variant-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .controls-section {
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .control-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .control-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="component-gallery">
+        <h1>Component Gallery</h1>
+        <p>This page showcases all components in isolation for development and testing.</p>
+
+        <!-- Status Display Component -->
+        <div class="component-section">
+            <div class="component-header">
+                <h2 class="component-title">StatusDisplay</h2>
+                <p class="component-description">Shows connection status and messages</p>
+            </div>
+            <div class="component-variants">
+                <div class="variant">
+                    <div class="variant-title">Loading State</div>
+                    <div class="component-demo">
+                        <div id="status-loading" class="status disconnected">Loading...</div>
+                    </div>
+                </div>
+                <div class="variant">
+                    <div class="variant-title">Connected State</div>
+                    <div class="component-demo">
+                        <div id="status-connected" class="status connected">Connected</div>
+                    </div>
+                </div>
+                <div class="variant">
+                    <div class="variant-title">Error State</div>
+                    <div class="component-demo">
+                        <div id="status-error" class="status error">Connection failed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Button Group Component -->
+        <div class="component-section">
+            <div class="component-header">
+                <h2 class="component-title">ButtonGroup</h2>
+                <p class="component-description">Connection buttons and vibration controls</p>
+            </div>
+            <div class="component-variants">
+                <div class="variant">
+                    <div class="variant-title">Both Disconnected</div>
+                    <div class="component-demo">
+                        <div class="button-group">
+                            <div class="controller-buttons-container">
+                                <button class="connect-btn connect-btn-left">Connect Left</button>
+                                <button class="vibrate-btn" disabled>Vibrate</button>
+                                <button class="connect-btn connect-btn-right">Connect Right</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="variant">
+                    <div class="variant-title">Both Connected, Ready to Vibrate</div>
+                    <div class="component-demo">
+                        <div class="button-group">
+                            <div class="controller-buttons-container">
+                                <button class="connect-btn connect-btn-left connected">Left</button>
+                                <button class="vibrate-btn ready">Vibrate</button>
+                                <button class="connect-btn connect-btn-right connected">Right</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="variant">
+                    <div class="variant-title">Vibrating</div>
+                    <div class="component-demo">
+                        <div class="button-group">
+                            <div class="controller-buttons-container">
+                                <button class="connect-btn connect-btn-left connected" disabled>Left</button>
+                                <button class="stop-btn">Stop</button>
+                                <button class="connect-btn connect-btn-right connected" disabled>Right</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Section Component -->
+        <div class="component-section">
+            <div class="component-header">
+                <h2 class="component-title">InfoSection</h2>
+                <p class="component-description">Help and connection instructions</p>
+            </div>
+            <div class="component-variants">
+                <div class="variant">
+                    <div class="variant-title">Collapsed</div>
+                    <div class="component-demo">
+                        <div class="info">
+                            <button class="info-toggle" aria-expanded="false">▶ Need help connecting your Joy-Cons?</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="variant">
+                    <div class="variant-title">Expanded</div>
+                    <div class="component-demo">
+                        <div class="info">
+                            <button class="info-toggle" aria-expanded="true">▼ Need help connecting your Joy-Cons?</button>
+                            <div class="info-content">
+                                <ul class="pairing-list">
+                                    <li><strong>macOS:</strong> Sync button → System Settings > Bluetooth</li>
+                                    <li><strong>Windows:</strong> Sync button → Settings > Devices > Bluetooth</li>
+                                    <li><strong>iOS:</strong> Not supported</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Component -->
+        <div class="component-section">
+            <div class="component-header">
+                <h2 class="component-title">Controls</h2>
+                <p class="component-description">Preset selection and vibration settings</p>
+            </div>
+            <div class="component-demo">
+                <div class="controls">
+                    <div class="control-group preset-select-group">
+                        <label for="presetSelect">Presets</label>
+                        <select id="presetSelect">
+                            <option value="standard-processing">Standard Processing</option>
+                            <option value="gentle">Gentle</option>
+                            <option value="intense">Intense</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <button class="toggle-advanced-btn">▶ Show Advanced Settings</button>
+                    <div class="advanced-controls" style="display: none;">
+                        <div class="control-group">
+                            <label for="lengthSlider">Pulse Length: <span id="lengthValue">500</span>ms</label>
+                            <input type="range" id="lengthSlider" min="10" max="2000" value="500" step="10">
+                        </div>
+                        <div class="control-group">
+                            <label for="intensitySlider">Intensity: <span id="intensityValue">80%</span></label>
+                            <input type="range" id="intensitySlider" min="0" max="1" value="0.8" step="0.05">
+                        </div>
+                        <div class="control-group">
+                            <label for="pauseSlider">Pause: <span id="pauseValue">1000</span>ms</label>
+                            <input type="range" id="pauseSlider" min="0" max="3000" value="1000" step="50">
+                        </div>
+                        <div class="control-group repeat-mode-group">
+                            <div class="repeat-mode-wrapper">
+                                <label for="repeatModeSelect">Repeat Mode:</label>
+                                <select id="repeatModeSelect">
+                                    <option value="unlimited">Unlimited</option>
+                                    <option value="count">Count</option>
+                                </select>
+                            </div>
+                            <div id="repeatCountGroup" class="repeat-count-wrapper" style="display: none;">
+                                <label for="repeatCountInput">Repeat Count: <span id="repeatCountValue">5</span></label>
+                                <input type="number" id="repeatCountInput" min="1" value="5" step="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="controls-section">
+                <h3>Interactive Controls</h3>
+                <div class="control-group">
+                    <label for="presetSelectLive">Change Preset:</label>
+                    <select id="presetSelectLive">
+                        <option value="standard-processing">Standard Processing</option>
+                        <option value="gentle">Gentle</option>
+                        <option value="intense">Intense</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="advancedToggle">Toggle Advanced:</label>
+                    <button id="advancedToggle">Show Advanced Settings</button>
+                </div>
+                <div class="control-group">
+                    <label for="repeatModeToggle">Toggle Repeat Mode:</label>
+                    <button id="repeatModeToggle">Switch to Count Mode</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header Component -->
+        <div class="component-section">
+            <div class="component-header">
+                <h2 class="component-title">Header</h2>
+                <p class="component-description">App title and branding</p>
+            </div>
+            <div class="component-demo">
+                <header>
+                    <div class="header-content">
+                        <img src="./image.png" alt="EMDR Logo" class="logo" />
+                        <h1>Tapendos</h1>
+                    </div>
+                    <p class="subtitle">
+                        Alternating Joy-Con vibration for
+                        <a href="https://en.wikipedia.org/wiki/Eye_movement_desensitization_and_reprocessing"
+                           target="_blank"
+                           rel="noopener noreferrer">EMDR</a>
+                    </p>
+                </header>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple interactive demo for Controls component
+        document.addEventListener('DOMContentLoaded', function() {
+            const presetSelect = document.getElementById('presetSelectLive');
+            const advancedToggle = document.getElementById('advancedToggle');
+            const repeatModeToggle = document.getElementById('repeatModeToggle');
+            const repeatModeSelect = document.getElementById('repeatModeSelect');
+            const repeatCountGroup = document.getElementById('repeatCountGroup');
+            const advancedControls = document.querySelector('.advanced-controls');
+
+            let showAdvanced = false;
+            let repeatMode = 'unlimited';
+
+            function updateDisplay() {
+                advancedToggle.textContent = showAdvanced ? 'Hide Advanced Settings' : 'Show Advanced Settings';
+                advancedControls.style.display = showAdvanced ? 'block' : 'none';
+                repeatModeToggle.textContent = repeatMode === 'unlimited' ? 'Switch to Count Mode' : 'Switch to Unlimited Mode';
+                repeatCountGroup.style.display = repeatMode === 'count' ? 'block' : 'none';
+            }
+
+            presetSelect.addEventListener('change', function(e) {
+                const value = e.target.value;
+                document.getElementById('presetSelect').value = value;
+                // Custom preset shows advanced controls
+                if (value === 'custom') {
+                    showAdvanced = true;
+                    updateDisplay();
+                }
+            });
+
+            advancedToggle.addEventListener('click', function() {
+                showAdvanced = !showAdvanced;
+                updateDisplay();
+            });
+
+            repeatModeToggle.addEventListener('click', function() {
+                repeatMode = repeatMode === 'unlimited' ? 'count' : 'unlimited';
+                repeatModeSelect.value = repeatMode;
+                updateDisplay();
+            });
+
+            updateDisplay();
+        });
+    </script>
+</body>
+</html>

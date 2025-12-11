@@ -8,6 +8,9 @@
     "build": "bun build.js",
     "preview": "bun preview-server.js"
   },
+  "test": {
+    "setupFiles": ["./setup.test.mjs"]
+  },
   "dependencies": {
     "preact": "^10.19.3",
     "htm": "^3.1.1",

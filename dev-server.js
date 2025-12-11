@@ -28,11 +28,8 @@ function transformFile(filePath, content) {
   let transformed = result?.code || content;
   
   // If the file was transformed and uses h(), ensure h is imported
-  if (transformed !== content && transformed.includes('h(') && !transformed.includes("import { h }") && !transformed.includes('from "preact"') && !transformed.includes("from 'preact'")) {
-    // Add import for h if not already present
-    if (!transformed.includes('import') || !transformed.match(/import.*h.*from.*preact/)) {
-      transformed = `import { h } from 'preact';\n${transformed}`;
-    }
+  if (transformed !== content && transformed.includes('h(') && !transformed.match(/import.*h.*from.*preact/)) {
+    transformed = `import { h } from 'preact';\n${transformed}`;
   }
   
   return transformed;
